@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Reels & Interaction</title>
-    
-    <meta name="description" content="Freechatbook - Social, Reels & Earning.">
-    <meta name="keywords" content="freechat, chatbook, freechatbooklive">
+    <title>Freechatbook - Active Status Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,34 +13,27 @@
     <style>
         body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
         .hidden { display: none !important; }
-        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .badge-blue { color: #0866FF; } .badge-black { color: #000; } .badge-yellow { color: #FFD700; }
-        .badge-red { color: #FF0000; } .badge-green { color: #28a745; }
         .active-nav { color: #0866FF !important; }
-        .reel-video { height: 80vh; background: #000; border-radius: 20px; position: relative; margin-bottom: 20px; overflow: hidden; }
-        .reel-overlay { position: absolute; right: 15px; bottom: 80px; display: flex; flex-direction: column; gap: 20px; color: white; text-align: center; z-index: 10; }
-        .comment-box { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 10px; font-size: 12px; }
+        
+        /* অনলাইন ইন্ডিকেটর */
+        .online-dot { width: 12px; height: 12px; background-color: #31a24c; border: 2px solid white; border-radius: 50%; position: absolute; bottom: 2px; right: 2px; }
+        .active-text { color: #31a24c; font-size: 11px; font-weight: bold; }
+        
+        /* চ্যাট বাবল স্টাইল */
+        .chat-bubble-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 10px 14px; align-self: flex-end; max-width: 75%; position: relative; }
+        .chat-bubble-other { background: #e4e6eb; color: black; border-radius: 18px 18px 18px 0; padding: 10px 14px; align-self: flex-start; max-width: 75%; }
+        
+        .status-tick { font-size: 10px; margin-top: 2px; text-align: right; color: #65676b; }
+        .seen-tick { color: #0866FF !important; }
+        .typing-text { font-size: 11px; color: #0866FF; font-style: italic; }
+        
+        .nav-btn { font-size: 1.4rem; color: #65676b; cursor: pointer; }
+        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-    <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6">
-        <h1 class="text-[#0866FF] text-5xl font-black italic mb-10">freechatbook</h1>
-        <div id="loginBox" class="w-full max-w-sm">
-            <input type="text" id="lUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded-xl mb-3 outline-none focus:border-blue-500">
-            <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded-xl mb-4 outline-none">
-            <button onclick="handleAuth('login')" class="w-full bg-[#0866FF] text-white py-3 rounded-xl font-bold mb-3">Login</button>
-            <p onclick="document.getElementById('loginBox').classList.add('hidden'); document.getElementById('signupBox').classList.remove('hidden');" class="text-center text-blue-600 cursor-pointer font-bold">নতুন একাউন্ট?</p>
-        </div>
-        <div id="signupBox" class="w-full max-w-sm hidden">
-            <input type="text" id="rUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded-xl mb-3">
-            <input type="password" id="rPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded-xl mb-4">
-            <button onclick="handleAuth('signup')" class="w-full bg-[#42b72a] text-white py-3 rounded-xl font-bold mb-3">Sign Up</button>
-            <p onclick="location.reload()" class="text-center text-blue-600 cursor-pointer font-bold">লগইন করুন</p>
-        </div>
-    </div>
-
-    <div id="mainApp" class="hidden">
+    <div id="mainApp">
         <nav class="bg-white sticky top-0 border-b p-3 flex justify-between items-center px-4 z-50 shadow-sm">
             <h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
             <div class="flex items-center gap-4">
@@ -52,18 +42,16 @@
             </div>
         </nav>
 
-        <div class="max-w-xl mx-auto p-3 pb-24">
-            <div id="feedSection"><div id="feedList"></div></div>
-
-            <div id="reelsSection" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Reels</h2>
-                    <input type="file" id="reelFile" accept="video/*" class="hidden" onchange="uploadReel(this)">
-                    <button onclick="document.getElementById('reelFile').click()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs font-bold">Upload</button>
-                </div>
-                <div id="reelList"></div>
+        <div id="activeFriendsScroll" class="bg-white p-3 border-b flex gap-4 overflow-x-auto">
             </div>
 
+        <div class="max-w-xl mx-auto p-3 pb-24">
+            <div id="feedSection"><div id="feedList"></div></div>
+            <div id="inboxSection" class="hidden">
+                <h2 class="font-bold mb-4 text-lg">মেসেঞ্জর</h2>
+                <div id="chatUserList" class="space-y-2"></div>
+            </div>
+            <div id="reelsSection" class="hidden"><div id="reelList" class="space-y-4"></div></div>
             <div id="profileSection" class="hidden">
                 <div class="bg-white p-6 rounded-2xl text-center shadow-sm">
                     <img id="profilePfp" src="" class="w-24 h-24 rounded-full mx-auto border-4 border-blue-100 object-cover">
@@ -71,23 +59,49 @@
                     <p id="fCount" class="text-blue-600 font-bold text-sm">0 Followers</p>
                     <button onclick="logout()" class="mt-4 bg-red-50 text-red-600 px-4 py-1 rounded-lg text-xs font-bold">Logout</button>
                 </div>
-                <div id="myPosts" class="mt-4"></div>
             </div>
         </div>
 
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
-            <i onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400 cursor-pointer" id="ic-feed"></i>
-            <i onclick="showSection('reels')" class="fas fa-play-circle text-xl text-gray-400 cursor-pointer" id="ic-reels"></i>
-            <i onclick="document.getElementById('postCreateModal').classList.remove('hidden')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
-            <i onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer" id="ic-profile"></i>
+            <i onclick="showSection('feed')" class="fas fa-home nav-btn active-nav" id="ic-feed"></i>
+            <i onclick="showSection('inbox')" class="fas fa-comment-dots nav-btn" id="ic-inbox"></i>
+            <i onclick="document.getElementById('postModal').classList.remove('hidden')" class="fas fa-plus-square nav-btn"></i>
+            <i onclick="showSection('reels')" class="fas fa-play-circle nav-btn" id="ic-reels"></i>
+            <i onclick="showSection('profile')" class="fas fa-user-circle nav-btn" id="ic-profile"></i>
         </div>
     </div>
 
-    <div id="postCreateModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md p-6 rounded-2xl">
-            <div class="flex justify-between mb-4"><b>নতুন পোস্ট</b> <i onclick="document.getElementById('postCreateModal').classList.add('hidden')" class="fas fa-times cursor-pointer"></i></div>
-            <textarea id="pText" class="w-full bg-gray-100 p-3 rounded-lg outline-none mb-3" placeholder="কি ভাবছেন?"></textarea>
-            <input type="file" id="pImg" class="text-xs mb-4">
+    <div id="personalChat" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
+        <div class="bg-white border-b p-3 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-3">
+                <i onclick="closeChat()" class="fas fa-arrow-left cursor-pointer"></i>
+                <div class="relative">
+                    <img id="chatUserPfp" src="" class="w-9 h-9 rounded-full border object-cover">
+                    <div id="chatActiveDot" class="hidden online-dot"></div>
+                </div>
+                <div>
+                    <span id="chatUserName" class="font-bold text-sm block leading-tight">User</span>
+                    <span id="typingStatus" class="typing-text"></span>
+                    <span id="headerActiveText" class="active-text hidden">Active Now</span>
+                </div>
+            </div>
+            <div class="flex gap-5 text-[#0866FF]">
+                <i class="fas fa-phone-alt cursor-pointer"></i>
+                <i class="fas fa-video cursor-pointer"></i>
+            </div>
+        </div>
+        
+        <div id="messageDisplay" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-gray-50"></div>
+        
+        <div class="p-3 bg-white border-t flex gap-2">
+            <input id="chatInput" type="text" oninput="handleTyping()" class="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none border" placeholder="Aa">
+            <button onclick="sendChatMessage()" class="text-[#0866FF] px-2"><i class="fas fa-paper-plane text-xl"></i></button>
+        </div>
+    </div>
+
+    <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md p-6 rounded-2xl text-center">
+            <textarea id="pText" class="w-full bg-gray-50 p-3 rounded-lg outline-none mb-3" placeholder="কি ভাবছেন?"></textarea>
             <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Post Now</button>
         </div>
     </div>
@@ -106,137 +120,156 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- ব্যাজ ও অথেন্টিকেশন লজিক ---
-        function getBadge(idx, followers) {
-            const colors = ['badge-blue', 'badge-black', 'badge-yellow', 'badge-red', 'badge-green'];
-            if(followers >= 1000) return `<i class="fas fa-check-circle badge-green"></i>`;
-            return `<i class="fas fa-check-circle ${colors[idx % 5]}"></i>`;
+        // --- Active Status Logic ---
+        function setOnlineStatus() {
+            if(!user) return;
+            const statusRef = db.ref('status/' + user.name);
+            statusRef.set(true);
+            statusRef.onDisconnect().set(false); // ট্যাব বন্ধ করলে অফলাইন হবে
         }
 
-        function handleAuth(type) {
-            const u = document.getElementById(type === 'login' ? 'lUser' : 'rUser').value.trim();
-            const p = document.getElementById(type === 'login' ? 'lPass' : 'rPass').value.trim();
-            if(type === 'signup') {
-                db.ref('users').once('value', s => {
-                    const idx = s.numChildren();
-                    db.ref('users/'+u).set({name:u, pass:p, pfp:"https://cdn-icons-png.flaticon.com/512/149/149071.png", followers:0, joinIndex:idx});
-                    alert("Account Created!"); location.reload();
-                });
-            } else {
-                db.ref('users/'+u).once('value', s => {
-                    if(s.exists() && s.val().pass === p) {
-                        localStorage.setItem('freechatbook_user', JSON.stringify(s.val()));
-                        location.reload();
-                    } else alert("Error!");
-                });
-            }
-        }
-
-        // --- সেকশন কন্ট্রোল ---
-        function showSection(id) {
-            ['feed','reels','profile'].forEach(s => document.getElementById(s+'Section').classList.add('hidden'));
-            document.getElementById(id+'Section').classList.remove('hidden');
-            if(id === 'reels') loadReels();
-            if(id === 'profile') loadProfile();
-        }
-
-        // --- ফিড ও কমেন্ট সিস্টেম ---
-        function loadFeed() {
-            db.ref('users').on('value', uSnap => {
-                const uData = uSnap.val();
-                db.ref('posts').on('value', snap => {
-                    const list = document.getElementById('feedList'); list.innerHTML = '';
-                    let ps = []; snap.forEach(c => ps.push({key:c.key, ...c.val()}));
-                    ps.reverse().forEach(p => {
-                        const info = uData[p.uName] || {joinIndex:0};
-                        list.innerHTML += `<div class="post-card p-4">
-                            <div class="flex items-center gap-2 mb-3">
-                                <img src="${p.uPfp}" class="w-9 h-9 rounded-full object-cover">
-                                <h4 class="font-bold text-sm">${p.uName} ${getBadge(info.joinIndex, info.followers)}</h4>
-                            </div>
-                            <p class="text-sm mb-2">${p.content}</p>
-                            ${p.image ? `<img src="${p.image}" class="w-full rounded-lg mb-3">` : ''}
-                            <div class="flex gap-4 border-t pt-2 text-gray-500 font-bold text-xs">
-                                <span onclick="likePost('${p.key}')" class="cursor-pointer"><i class="fas fa-heart text-red-500"></i> ${p.likes || 0}</span>
-                                <span onclick="toggleComments('${p.key}')" class="cursor-pointer"><i class="fas fa-comment"></i> কমেন্ট</span>
-                            </div>
-                            <div id="cmt-${p.key}" class="hidden mt-3">
-                                <div class="flex gap-2 mb-2"><input id="ci-${p.key}" class="flex-1 border rounded-full px-3 py-1 text-xs" placeholder="কমেন্ট লিখুন..."><button onclick="addComment('${p.key}')" class="text-blue-600 text-xs">Send</button></div>
-                                <div id="cl-${p.key}" class="comment-box"></div>
-                            </div>
-                        </div>`;
-                        loadComments(p.key);
+        function loadActiveLists() {
+            db.ref('status').on('value', snap => {
+                const onlineUsers = snap.val() || {};
+                const scrollList = document.getElementById('activeFriendsScroll');
+                const inboxList = document.getElementById('chatUserList');
+                scrollList.innerHTML = '';
+                
+                db.ref('users').once('value', uSnap => {
+                    uSnap.forEach(child => {
+                        const u = child.val();
+                        if(u.name !== user.name && onlineUsers[u.name] === true) {
+                            // উপরের স্ক্রল লিস্টে একটিভ ফ্রেন্ড
+                            scrollList.innerHTML += `
+                            <div onclick="openChat('${u.name}', '${u.pfp}')" class="relative flex-shrink-0 cursor-pointer">
+                                <img src="${u.pfp}" class="w-14 h-14 rounded-full border-2 border-green-500 p-0.5 object-cover">
+                                <div class="online-dot"></div>
+                                <p class="text-[10px] text-center mt-1 font-bold truncate w-14">${u.name}</p>
+                            </div>`;
+                        }
                     });
                 });
             });
         }
 
-        function likePost(key) { db.ref('posts/'+key+'/likes').transaction(c => (c || 0) + 1); }
-        function toggleComments(key) { document.getElementById('cmt-'+key).classList.toggle('hidden'); }
-        
-        function addComment(key) {
-            const txt = document.getElementById('ci-'+key).value;
-            if(!txt) return;
-            db.ref('comments/'+key).push({uName: user.name, text: txt});
-            document.getElementById('ci-'+key).value = '';
+        // --- Typing & Messenger Functions (Updated) ---
+        let currentChatFriend = "";
+        let chatId = "";
+        let typingTimeout;
+
+        function handleTyping() {
+            db.ref('typing/' + chatId + '/' + user.name).set(true);
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                db.ref('typing/' + chatId + '/' + user.name).set(false);
+            }, 2000);
         }
 
-        function loadComments(key) {
-            db.ref('comments/'+key).on('value', snap => {
-                const box = document.getElementById('cl-'+key); if(!box) return;
+        function openChat(friendName, friendPfp) {
+            currentChatFriend = friendName;
+            chatId = [user.name, friendName].sort().join("_");
+            document.getElementById('chatUserName').innerText = friendName;
+            document.getElementById('chatUserPfp').src = friendPfp;
+            document.getElementById('personalChat').classList.remove('hidden');
+
+            // Active Now Status in Chat Header
+            db.ref('status/' + friendName).on('value', snap => {
+                const isOnline = snap.val() === true;
+                document.getElementById('chatActiveDot').classList.toggle('hidden', !isOnline);
+                document.getElementById('headerActiveText').classList.toggle('hidden', !isOnline);
+            });
+
+            // Seen Update & Listen Messages
+            db.ref('chats/' + chatId).on('value', snap => {
+                const box = document.getElementById('messageDisplay');
                 box.innerHTML = '';
                 snap.forEach(c => {
-                    const d = c.val();
-                    box.innerHTML += `<p><b>${d.uName}:</b> ${d.text}</p>`;
+                    const msg = c.val();
+                    const isMe = msg.sender === user.name;
+                    if(!isMe && !msg.seen) db.ref('chats/' + chatId + '/' + c.key).update({seen: true});
+                    
+                    box.innerHTML += `
+                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                            <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}">${msg.text}</div>
+                            ${isMe ? `<span class="status-tick ${msg.seen ? 'seen-tick' : ''}">${msg.seen ? 'Seen' : 'Sent'}</span>` : ''}
+                        </div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+
+            db.ref('typing/' + chatId + '/' + friendName).on('value', snap => {
+                document.getElementById('typingStatus').innerText = snap.val() ? 'Typing...' : '';
+            });
+        }
+
+        function sendChatMessage() {
+            const txt = document.getElementById('chatInput').value.trim();
+            if(!txt) return;
+            db.ref('chats/' + chatId).push({ sender: user.name, text: txt, seen: false, time: Date.now() });
+            document.getElementById('chatInput').value = '';
+            db.ref('typing/' + chatId + '/' + user.name).set(false);
+        }
+
+        function showSection(id) {
+            ['feed','inbox','reels','profile'].forEach(s => {
+                document.getElementById(s+'Section').classList.add('hidden');
+                document.getElementById('ic-'+s).classList.remove('active-nav');
+            });
+            document.getElementById(id+'Section').classList.remove('hidden');
+            document.getElementById('ic-'+id).classList.add('active-nav');
+            if(id === 'inbox') loadInboxList();
+        }
+
+        function loadInboxList() {
+            db.ref('users').once('value', snap => {
+                const list = document.getElementById('chatUserList');
+                list.innerHTML = '';
+                snap.forEach(child => {
+                    const u = child.val();
+                    if(u.name !== user.name) {
+                        db.ref('status/' + u.name).once('value', sSnap => {
+                            const isOnline = sSnap.val() === true;
+                            list.innerHTML += `
+                            <div onclick="openChat('${u.name}', '${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer mb-2">
+                                <div class="relative">
+                                    <img src="${u.pfp}" class="w-12 h-12 rounded-full object-cover">
+                                    ${isOnline ? '<div class="online-dot"></div>' : ''}
+                                </div>
+                                <div class="flex-1 text-left">
+                                    <h4 class="font-bold text-sm">${u.name}</h4>
+                                    <p class="text-[10px] ${isOnline ? 'text-green-500 font-bold' : 'text-gray-400'}">${isOnline ? 'Active Now' : 'Offline'}</p>
+                                </div>
+                            </div>`;
+                        });
+                    }
                 });
             });
         }
 
-        // --- রিলস সিস্টেম (লাইক ও কমেন্ট সহ) ---
-        function uploadReel(input) {
-            const reader = new FileReader();
-            reader.onload = e => db.ref('reels').push({uName:user.name, uPfp:user.pfp, video:e.target.result, likes:0});
-            reader.readAsDataURL(input.files[0]);
-        }
-
-        function loadReels() {
-            db.ref('reels').on('value', snap => {
-                const list = document.getElementById('reelList'); list.innerHTML = '';
-                snap.forEach(c => {
-                    const r = c.val();
-                    list.innerHTML += `<div class="reel-video">
-                        <video src="${r.video}" class="w-full h-full object-cover" loop onclick="this.paused?this.play():this.pause()"></video>
-                        <div class="reel-overlay">
-                            <div onclick="likeReel('${c.key}')"><i class="fas fa-heart text-2xl text-red-500"></i><p>${r.likes || 0}</p></div>
-                            <div onclick="alert('Comment feature on reels coming soon!')"><i class="fas fa-comment text-2xl"></i></div>
-                            <div onclick="window.open('https://wa.me/?text=Watch this Reel on Freechatbook!')"><i class="fas fa-share text-2xl text-green-400"></i></div>
+        function loadFeed() {
+            db.ref('posts').on('value', snap => {
+                const fl = document.getElementById('feedList'); fl.innerHTML = '';
+                let ps = []; snap.forEach(c => ps.push({key:c.key, ...c.val()}));
+                ps.reverse().forEach(p => {
+                    fl.innerHTML += `<div class="post-card p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2"><img src="${p.uPfp}" class="w-8 h-8 rounded-full border"><b>${p.uName}</b></div>
+                            <button onclick="openChat('${p.uName}', '${p.uPfp}')" class="text-[#0866FF] text-xs font-bold">Message</button>
                         </div>
-                        <div class="absolute bottom-4 left-4 text-white font-bold">@${r.uName}</div>
+                        <p class="text-sm">${p.content}</p>
                     </div>`;
                 });
             });
         }
-        function likeReel(key) { db.ref('reels/'+key+'/likes').transaction(c => (c || 0) + 1); }
 
-        function submitPost() {
-            const t = document.getElementById('pText').value;
-            const f = document.getElementById('pImg').files[0];
-            const push = (img="") => db.ref('posts').push({uName:user.name, uPfp:user.pfp, content:t, image:img, likes:0, time:Date.now()}).then(()=>location.reload());
-            if(f) { const r = new FileReader(); r.onload=e=>push(e.target.result); r.readAsDataURL(f); } else if(t) push();
-        }
-
-        function loadProfile() {
-            document.getElementById('pName').innerHTML = user.name + getBadge(user.joinIndex, user.followers);
-            document.getElementById('profilePfp').src = user.pfp;
-            document.getElementById('fCount').innerText = (user.followers || 0) + " Followers";
-        }
-
-        function logout() { localStorage.clear(); location.reload(); }
+        function closeChat() { document.getElementById('personalChat').classList.add('hidden'); }
+        function logout() { db.ref('status/'+user.name).set(false); localStorage.clear(); location.reload(); }
 
         if(user) {
-            document.getElementById('authPage').remove();
-            document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('navPfp').src = user.pfp;
+            document.getElementById('pName').innerText = user.name;
+            setOnlineStatus();
+            loadActiveLists();
             loadFeed();
         }
     </script>
