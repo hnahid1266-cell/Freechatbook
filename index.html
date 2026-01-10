@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Seen & Typing Edition</title>
+    <title>Freechatbook - Smooth Running</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -11,20 +11,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
         .hidden { display: none !important; }
         .active-nav { color: #0866FF !important; }
-        
-        /* চ্যাট বাবল স্টাইল */
-        .chat-bubble-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 10px 14px; align-self: flex-end; max-width: 75%; position: relative; }
+        .online-dot { width: 12px; height: 12px; background-color: #31a24c; border: 2px solid white; border-radius: 50%; position: absolute; bottom: 2px; right: 2px; }
+        .chat-bubble-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 10px 14px; align-self: flex-end; max-width: 75%; }
         .chat-bubble-other { background: #e4e6eb; color: black; border-radius: 18px 18px 18px 0; padding: 10px 14px; align-self: flex-start; max-width: 75%; }
-        
-        .status-tick { font-size: 10px; margin-top: 2px; text-align: right; color: #65676b; }
-        .seen-tick { color: #0866FF !important; }
-        .typing-text { font-size: 11px; color: #0866FF; font-style: italic; margin-left: 10px; height: 15px; }
-        
-        .nav-btn { font-size: 1.4rem; color: #65676b; cursor: pointer; }
-        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .nav-btn { font-size: 1.4rem; color: #65676b; cursor: pointer; transition: 0.2s; }
+        .nav-btn:active { transform: scale(0.9); }
+        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 15px; }
     </style>
 </head>
 <body>
@@ -34,23 +29,28 @@
             <h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
             <div class="flex items-center gap-4">
                 <i onclick="showSection('requests')" class="fas fa-user-friends text-xl text-gray-500 cursor-pointer"></i>
-                <img id="navPfp" onclick="showSection('profile')" src="" class="w-9 h-9 rounded-full border-2 border-blue-500 object-cover cursor-pointer">
+                <img id="navPfp" onclick="showSection('profile')" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-9 h-9 rounded-full border-2 border-blue-500 object-cover cursor-pointer">
             </div>
         </nav>
 
+        <div id="activeFriendsScroll" class="bg-white p-3 border-b flex gap-4 overflow-x-auto"></div>
+
         <div class="max-w-xl mx-auto p-3 pb-24">
-            <div id="feedSection"><div id="feedList"></div></div>
+            <div id="feedSection"><div id="feedList" class="text-center py-10 text-gray-400">পোস্ট লোড হচ্ছে...</div></div>
+            
             <div id="inboxSection" class="hidden">
-                <h2 class="font-bold mb-4 text-lg">চ্যাটলিস্ট</h2>
+                <h2 class="font-bold mb-4 text-lg px-2">মেসেঞ্জর</h2>
                 <div id="chatUserList" class="space-y-2"></div>
             </div>
+
             <div id="reelsSection" class="hidden"><div id="reelList" class="space-y-4"></div></div>
+
             <div id="profileSection" class="hidden">
                 <div class="bg-white p-6 rounded-2xl text-center shadow-sm">
-                    <img id="profilePfp" src="" class="w-24 h-24 rounded-full mx-auto border-4 border-blue-100 object-cover">
-                    <h2 id="pName" class="text-xl font-bold mt-2"></h2>
+                    <img id="profilePfp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-24 h-24 rounded-full mx-auto border-4 border-blue-100 object-cover">
+                    <h2 id="pName" class="text-xl font-bold mt-2">লোড হচ্ছে...</h2>
                     <p id="fCount" class="text-blue-600 font-bold text-sm">0 Followers</p>
-                    <button onclick="logout()" class="mt-4 bg-red-50 text-red-600 px-4 py-1 rounded-lg text-xs font-bold">Logout</button>
+                    <button onclick="logout()" class="mt-4 bg-red-50 text-red-600 px-6 py-2 rounded-lg text-xs font-bold">Logout</button>
                 </div>
             </div>
         </div>
@@ -67,37 +67,38 @@
     <div id="personalChat" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
         <div class="bg-white border-b p-3 flex justify-between items-center shadow-sm">
             <div class="flex items-center gap-3">
-                <i onclick="closeChat()" class="fas fa-arrow-left cursor-pointer"></i>
-                <img id="chatUserPfp" src="" class="w-8 h-8 rounded-full border object-cover">
+                <i onclick="closeChat()" class="fas fa-arrow-left cursor-pointer p-2"></i>
+                <div class="relative">
+                    <img id="chatUserPfp" src="" class="w-10 h-10 rounded-full border object-cover">
+                    <div id="chatActiveDot" class="hidden online-dot"></div>
+                </div>
                 <div>
                     <span id="chatUserName" class="font-bold text-sm block leading-tight">User</span>
-                    <span id="typingStatus" class="typing-text"></span>
+                    <span id="typingStatus" class="text-[11px] text-blue-600 italic"></span>
                 </div>
             </div>
-            <div class="flex gap-5 text-[#0866FF]">
+            <div class="flex gap-5 text-[#0866FF] pr-2">
                 <i class="fas fa-phone-alt"></i>
                 <i class="fas fa-video"></i>
             </div>
         </div>
-        
         <div id="messageDisplay" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-gray-50"></div>
-        
-        <div class="p-3 bg-white border-t flex flex-col gap-1">
-            <div class="flex gap-2">
-                <input id="chatInput" type="text" oninput="handleTyping()" class="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none border" placeholder="মেসেজ লিখুন...">
-                <button onclick="sendChatMessage()" class="text-[#0866FF] px-2"><i class="fas fa-paper-plane text-xl"></i></button>
-            </div>
+        <div class="p-3 bg-white border-t flex gap-2">
+            <input id="chatInput" type="text" oninput="handleTyping()" class="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none border" placeholder="Aa">
+            <button onclick="sendChatMessage()" class="text-[#0866FF] px-2"><i class="fas fa-paper-plane text-xl"></i></button>
         </div>
     </div>
 
     <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md p-6 rounded-2xl">
-            <textarea id="pText" class="w-full bg-gray-50 p-3 rounded-lg outline-none mb-3" placeholder="কি ভাবছেন?"></textarea>
+            <textarea id="pText" class="w-full bg-gray-50 p-3 rounded-lg outline-none mb-3 border" placeholder="কি ভাবছেন?"></textarea>
             <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Post Now</button>
+            <button onclick="document.getElementById('postModal').classList.add('hidden')" class="w-full mt-2 text-gray-500 text-sm">বাতিল</button>
         </div>
     </div>
 
     <script>
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
@@ -107,144 +108,153 @@
             messagingSenderId: "784680329144",
             appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
         };
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
+        // ইউজার চেক
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        let currentChatFriend = "";
-        let chatId = "";
-        let typingTimeout;
-
+        // সেকশন পরিবর্তন
         function showSection(id) {
             ['feed','inbox','reels','profile'].forEach(s => {
                 document.getElementById(s+'Section').classList.add('hidden');
-                document.getElementById('ic-'+s).classList.remove('active-nav');
+                const navIcon = document.getElementById('ic-'+s);
+                if(navIcon) navIcon.classList.remove('active-nav');
             });
             document.getElementById(id+'Section').classList.remove('hidden');
-            document.getElementById('ic-'+id).classList.add('active-nav');
+            const activeIcon = document.getElementById('ic-'+id);
+            if(activeIcon) activeIcon.classList.add('active-nav');
+            
             if(id === 'inbox') loadInboxList();
         }
 
-        // --- Typing Status ---
-        function handleTyping() {
-            db.ref('typing/' + chatId + '/' + user.name).set(true);
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                db.ref('typing/' + chatId + '/' + user.name).set(false);
-            }, 2000);
+        // অনলাইন স্ট্যাটাস
+        function updateOnlineStatus() {
+            if(!user) return;
+            const myStatusRef = db.ref('status/' + user.name);
+            myStatusRef.set(true);
+            myStatusRef.onDisconnect().set(false);
         }
 
-        function openChat(friendName, friendPfp) {
-            currentChatFriend = friendName;
-            chatId = [user.name, friendName].sort().join("_");
-            document.getElementById('chatUserName').innerText = friendName;
-            document.getElementById('chatUserPfp').src = friendPfp;
-            document.getElementById('personalChat').classList.remove('hidden');
-
-            // Seen Update: চ্যাট খুললে অপরপক্ষের পাঠানো আনসিন মেসেজগুলো সিন হয়ে যাবে
-            db.ref('chats/' + chatId).once('value', snap => {
-                snap.forEach(c => {
-                    if(c.val().sender !== user.name) {
-                        db.ref('chats/' + chatId + '/' + c.key).update({seen: true});
-                    }
+        // ফিড লোড (Optimize)
+        function loadFeed() {
+            db.ref('posts').limitToLast(20).on('value', snap => {
+                const fl = document.getElementById('feedList');
+                fl.innerHTML = '';
+                if(!snap.exists()) { fl.innerHTML = "কোন পোস্ট নেই।"; return; }
+                
+                let posts = [];
+                snap.forEach(c => { posts.push({key: c.key, ...c.val()}); });
+                posts.reverse().forEach(p => {
+                    fl.innerHTML += `
+                    <div class="post-card text-left">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <img src="${p.uPfp || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="w-8 h-8 rounded-full">
+                                <b class="text-sm">${p.uName}</b>
+                            </div>
+                            <button onclick="openChat('${p.uName}', '${p.uPfp}')" class="text-blue-600 text-xs font-bold">Message</button>
+                        </div>
+                        <p class="text-sm text-gray-800">${p.content}</p>
+                    </div>`;
                 });
             });
+        }
 
-            // Listen to Messages
-            db.ref('chats/' + chatId).on('value', snap => {
+        // একটিভ ফ্রেন্ড লিস্ট
+        function loadActiveFriends() {
+            db.ref('status').on('value', snap => {
+                const scrollList = document.getElementById('activeFriendsScroll');
+                scrollList.innerHTML = '';
+                const onlineData = snap.val() || {};
+                
+                db.ref('users').once('value', uSnap => {
+                    uSnap.forEach(child => {
+                        const u = child.val();
+                        if(u.name !== user.name && onlineData[u.name] === true) {
+                            scrollList.innerHTML += `
+                            <div onclick="openChat('${u.name}', '${u.pfp}')" class="relative flex-shrink-0 cursor-pointer">
+                                <img src="${u.pfp}" class="w-12 h-12 rounded-full border-2 border-green-500 p-0.5 object-cover">
+                                <div class="online-dot"></div>
+                            </div>`;
+                        }
+                    });
+                });
+            });
+        }
+
+        // চ্যাট ফাংশন
+        let currentChatId = "";
+        function openChat(friendName, friendPfp) {
+            currentChatId = [user.name, friendName].sort().join("_");
+            document.getElementById('chatUserName').innerText = friendName;
+            document.getElementById('chatUserPfp').src = friendPfp || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            document.getElementById('personalChat').classList.remove('hidden');
+
+            // মেসেজ লিসেনার
+            db.ref('chats/' + currentChatId).on('value', snap => {
                 const box = document.getElementById('messageDisplay');
                 box.innerHTML = '';
                 snap.forEach(c => {
                     const msg = c.val();
                     const isMe = msg.sender === user.name;
-                    const statusText = isMe ? (msg.seen ? 'Seen' : 'Sent') : '';
-                    const statusClass = msg.seen ? 'seen-tick' : '';
-
-                    box.innerHTML += `
-                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                            <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}">
-                                ${msg.text}
-                            </div>
-                            <div class="flex gap-2 items-center">
-                                ${isMe ? `<span onclick="unsend('${c.key}')" class="text-[9px] text-red-400 cursor-pointer">Unsend</span>` : ''}
-                                <span class="status-tick ${statusClass}">${statusText}</span>
-                            </div>
-                        </div>`;
+                    box.innerHTML += `<div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}">${msg.text}</div>`;
+                    if(!isMe && !msg.seen) db.ref('chats/' + currentChatId + '/' + c.key).update({seen: true});
                 });
                 box.scrollTop = box.scrollHeight;
             });
 
-            // Listen to Typing Status
-            db.ref('typing/' + chatId + '/' + friendName).on('value', snap => {
-                document.getElementById('typingStatus').innerText = snap.val() ? 'Typing...' : '';
+            // টাইপিং লিসেনার
+            db.ref('typing/' + currentChatId + '/' + friendName).on('value', s => {
+                document.getElementById('typingStatus').innerText = s.val() ? 'Typing...' : '';
             });
         }
 
         function sendChatMessage() {
             const txt = document.getElementById('chatInput').value.trim();
-            if(!txt) return;
-            db.ref('chats/' + chatId).push({
+            if(!txt || !currentChatId) return;
+            db.ref('chats/' + currentChatId).push({
                 sender: user.name,
                 text: txt,
                 seen: false,
                 time: Date.now()
             });
             document.getElementById('chatInput').value = '';
-            db.ref('typing/' + chatId + '/' + user.name).set(false);
+            db.ref('typing/' + currentChatId + '/' + user.name).set(false);
         }
 
-        function unsend(key) {
-            if(confirm("Unsend message?")) db.ref('chats/' + chatId + '/' + key).remove();
+        function handleTyping() {
+            db.ref('typing/' + currentChatId + '/' + user.name).set(true);
+            setTimeout(() => db.ref('typing/' + currentChatId + '/' + user.name).set(false), 3000);
         }
 
         function closeChat() {
             document.getElementById('personalChat').classList.add('hidden');
-            db.ref('chats/' + chatId).off();
-            db.ref('typing/' + chatId + '/' + currentChatFriend).off();
+            if(currentChatId) db.ref('chats/' + currentChatId).off();
         }
 
-        function loadInboxList() {
-            db.ref('users').once('value', snap => {
-                const list = document.getElementById('chatUserList');
-                list.innerHTML = '';
-                snap.forEach(child => {
-                    const u = child.val();
-                    if(u.name !== user.name) {
-                        list.innerHTML += `
-                        <div onclick="openChat('${u.name}', '${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer mb-2">
-                            <img src="${u.pfp}" class="w-12 h-12 rounded-full object-cover">
-                            <div class="text-left flex-1"><h4 class="font-bold text-sm">${u.name}</h4></div>
-                            <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
-                        </div>`;
-                    }
-                });
-            });
+        function logout() {
+            if(user) db.ref('status/' + user.name).set(false);
+            localStorage.clear();
+            location.reload();
         }
 
-        function loadFeed() {
-            db.ref('posts').on('value', snap => {
-                const fl = document.getElementById('feedList'); fl.innerHTML = '';
-                let ps = []; snap.forEach(c => ps.push({key:c.key, ...c.val()}));
-                ps.reverse().forEach(p => {
-                    fl.innerHTML += `
-                    <div class="post-card p-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center gap-2">
-                                <img src="${p.uPfp}" class="w-8 h-8 rounded-full">
-                                <b class="text-sm">${p.uName}</b>
-                            </div>
-                            <button onclick="openChat('${p.uName}', '${p.uPfp}')" class="text-[#0866FF] text-xs font-bold">Message</button>
-                        </div>
-                        <p class="text-sm">${p.content}</p>
-                    </div>`;
-                });
-            });
-        }
-
+        // ইনিশিয়াল লোড
         if(user) {
             document.getElementById('navPfp').src = user.pfp;
             document.getElementById('pName').innerText = user.name;
+            updateOnlineStatus();
             loadFeed();
+            loadActiveFriends();
+        } else {
+            // যদি লগইন না থাকে তবে একটি সিম্পল লগইন প্রম্পট (ডেভলপমেন্টের জন্য)
+            const name = prompt("আপনার ইউজারনাম দিন (শুধুমাত্র টেস্টের জন্য):");
+            if(name) {
+                const testUser = {name: name, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png"};
+                localStorage.setItem('freechatbook_user', JSON.stringify(testUser));
+                location.reload();
+            }
         }
     </script>
 </body>
