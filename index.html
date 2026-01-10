@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Official Final Version</title>
+    <title>Freechatbook - Speed Edition 2026</title>
     
     <meta name="description" content="Freechatbook - Connect, Share Reels and Earn.">
-    <meta name="keywords" content="freechat, chatbook, freechatbook, freechatbooklive">
+    <meta name="keywords" content="freechat, chatbook, freechatbooklive">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,54 +14,44 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none !important; }
-        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); overflow: hidden; }
-        
-        /* কালার ব্যাজসমূহ */
-        .badge-blue { color: #0866FF; }
-        .badge-black { color: #000000; }
-        .badge-yellow { color: #FFD700; }
-        .badge-red { color: #FF0000; }
-        .badge-green { color: #28a745; }
-        
-        .active-nav { color: #0866FF !important; }
-        .nav-btn { font-size: 1.4rem; color: #65676b; cursor: pointer; transition: 0.2s; }
-        .reel-video { height: 75vh; background: #000; border-radius: 15px; position: relative; margin-bottom: 15px; }
-        input, textarea { border: 1px solid #ddd; outline: none; transition: 0.3s; }
+        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .badge-blue { color: #0866FF; } .badge-black { color: #000; } .badge-yellow { color: #FFD700; } .badge-red { color: #FF0000; } .badge-green { color: #28a745; }
+        .nav-active { color: #0866FF !important; }
+        .btn-primary { background-color: #0866FF; transition: 0.3s; }
+        .btn-primary:active { transform: scale(0.95); }
+        input { border: 1px solid #ddd; outline: none; }
         input:focus { border-color: #0866FF; }
     </style>
 </head>
 <body>
 
     <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6 overflow-y-auto">
-        <h1 class="text-[#0866FF] text-5xl font-black italic mb-10">freechatbook</h1>
+        <h1 class="text-[#0866FF] text-5xl font-black italic mb-8">freechatbook</h1>
         
-        <div id="loginBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl bg-white">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">লগইন করুন</h2>
-            <input type="text" id="loginUser" placeholder="ইউজারনাম" class="w-full p-3 rounded-xl mb-3">
-            <input type="password" id="loginPass" placeholder="পাসওয়ার্ড" class="w-full p-3 rounded-xl mb-4">
-            <button onclick="handleLogin()" class="w-full bg-[#0866FF] text-white py-3 rounded-xl font-bold mb-3 hover:bg-blue-700">লগইন</button>
-            <div class="flex justify-between text-sm">
-                <span onclick="toggleAuth('signup')" class="text-blue-600 cursor-pointer font-bold">নতুন একাউন্ট</span>
-                <span onclick="toggleAuth('reset')" class="text-red-500 cursor-pointer font-bold">পাসওয়ার্ড ভুলে গেছেন?</span>
+        <div id="loginBox" class="w-full max-w-sm">
+            <input type="text" id="lUser" placeholder="ইউজারনাম বা নাম্বার" class="w-full p-3 rounded-xl mb-3">
+            <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full p-3 rounded-xl mb-4">
+            <button onclick="doLogin()" class="w-full btn-primary text-white py-3 rounded-xl font-bold mb-4">লগইন</button>
+            <div class="flex justify-between text-sm font-bold">
+                <span onclick="toggleAuth('signup')" class="text-blue-600 cursor-pointer">নতুন একাউন্ট</span>
+                <span onclick="toggleAuth('reset')" class="text-red-500 cursor-pointer">পাসওয়ার্ড ভুলে গেছেন?</span>
             </div>
         </div>
 
-        <div id="signupBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl bg-white hidden">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">নতুন একাউন্ট খুলুন</h2>
-            <input type="text" id="regUser" placeholder="ইউজারনাম (ছোট হাতের)" class="w-full p-3 rounded-xl mb-3">
-            <input type="password" id="regPass" placeholder="পাসওয়ার্ড" class="w-full p-3 rounded-xl mb-4">
-            <button onclick="handleSignup()" class="w-full bg-[#42b72a] text-white py-3 rounded-xl font-bold mb-3 hover:bg-green-700">রেজিস্ট্রেশন করুন</button>
-            <p onclick="toggleAuth('login')" class="text-center text-sm text-blue-600 cursor-pointer font-bold">লগইন পেজে ফিরুন</p>
+        <div id="signupBox" class="w-full max-w-sm hidden">
+            <input type="text" id="rName" placeholder="আপনার নাম" class="w-full p-3 rounded-xl mb-3">
+            <input type="text" id="rEmail" placeholder="ইমেইল বা নাম্বার" class="w-full p-3 rounded-xl mb-3">
+            <input type="password" id="rPass" placeholder="পাসওয়ার্ড" class="w-full p-3 rounded-xl mb-4">
+            <button onclick="doSignup()" class="w-full bg-[#42b72a] text-white py-3 rounded-xl font-bold mb-4">রেজিস্ট্রেশন করুন</button>
+            <p onclick="toggleAuth('login')" class="text-center text-sm font-bold text-blue-600 cursor-pointer">লগইন করুন</p>
         </div>
 
-        <div id="resetBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl bg-white hidden">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">পাসওয়ার্ড রিসেট</h2>
-            <p class="text-xs text-gray-500 mb-4">আপনার ইউজারনাম দিন, আমরা পাসওয়ার্ডটি দেখিয়ে দেব।</p>
-            <input type="text" id="resetUser" placeholder="আপনার ইউজারনাম" class="w-full p-3 rounded-xl mb-4">
-            <button onclick="handleReset()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold mb-3">পাসওয়ার্ড খুঁজুন</button>
-            <p onclick="toggleAuth('login')" class="text-center text-sm text-blue-600 cursor-pointer font-bold">ফিরে যান</p>
+        <div id="resetBox" class="w-full max-w-sm hidden text-center">
+            <input type="text" id="resetInput" placeholder="ইউজারনাম বা নাম্বার" class="w-full p-3 rounded-xl mb-4">
+            <button onclick="doReset()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold mb-4">পাসওয়ার্ড খুঁজুন</button>
+            <p onclick="toggleAuth('login')" class="text-sm font-bold text-blue-600 cursor-pointer">ফিরে যান</p>
         </div>
     </div>
 
@@ -72,56 +62,32 @@
         </nav>
 
         <div class="max-w-xl mx-auto p-3 pb-24">
-            <div id="feedSection">
-                <div id="feedList"></div>
-            </div>
-
-            <div id="reelsSection" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Short Reels</h2>
-                    <input type="file" id="reelFile" accept="video/*" onchange="uploadReel(this)" class="hidden">
-                    <button onclick="document.getElementById('reelFile').click()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs font-bold">আপলোড</button>
-                </div>
-                <div id="reelList"></div>
-            </div>
-
-            <div id="inboxSection" class="hidden">
-                <h2 class="font-bold mb-4">Messages</h2>
-                <div id="chatList" class="space-y-3 text-center text-gray-400 mt-10">Inbox is empty.</div>
-            </div>
-
-            <div id="postCreateSection" class="hidden">
+            <div id="feedSection"><div id="feedList"></div></div>
+            <div id="reelsSection" class="hidden"><div id="reelList"></div></div>
+            <div id="postSection" class="hidden">
                 <div class="bg-white p-6 rounded-2xl shadow-sm">
-                    <h3 class="font-bold mb-3 text-gray-700">নতুন পোস্ট তৈরি করুন</h3>
-                    <textarea id="postText" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-3" placeholder="আপনার মনে কি আছে?"></textarea>
-                    <input type="file" id="postImg" class="text-xs mb-4 block">
-                    <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">পোস্ট করুন</button>
+                    <textarea id="pText" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-3" placeholder="আপনার মনে কি আছে?"></textarea>
+                    <input type="file" id="pImg" class="text-xs mb-4">
+                    <button onclick="doPost()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">পোস্ট করুন</button>
                 </div>
             </div>
-
             <div id="profileSection" class="hidden">
-                <div class="bg-white p-6 rounded-2xl text-center shadow-sm mb-4">
-                    <img id="profilePfp" onclick="openImg(this.src)" src="" class="w-28 h-28 rounded-full mx-auto border-4 border-blue-100 object-cover cursor-pointer">
-                    <h2 id="profileNameDisplay" class="text-2xl font-bold mt-3 flex justify-center items-center gap-1"></h2>
-                    <p id="followerText" class="text-blue-600 font-bold text-sm">0 Followers</p>
+                <div class="bg-white p-6 rounded-2xl text-center shadow-sm">
+                    <img id="profilePfp" src="" class="w-28 h-28 rounded-full mx-auto border-4 border-blue-100 object-cover shadow-md">
+                    <h2 id="pName" class="text-2xl font-bold mt-3 flex justify-center items-center gap-1"></h2>
+                    <p id="fCount" class="text-blue-600 font-bold text-sm">0 Followers</p>
                     <button onclick="logout()" class="mt-6 bg-red-50 text-red-600 px-6 py-2 rounded-lg font-bold text-sm">লগআউট</button>
                 </div>
-                <h3 class="font-bold text-sm mb-2 ml-1 text-gray-500">আপনার পোস্টসমূহ:</h3>
-                <div id="myPostsList"></div>
+                <div id="myPosts" class="mt-4"></div>
             </div>
         </div>
 
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
-            <i onclick="showSection('feed')" class="fas fa-home nav-btn active-nav" id="ic-feed"></i>
-            <i onclick="showSection('inbox')" class="fas fa-comment-dots nav-btn" id="ic-inbox"></i>
-            <i onclick="showSection('reels')" class="fas fa-play-circle nav-btn" id="ic-reels"></i>
-            <i onclick="showSection('postCreate')" class="fas fa-plus-square nav-btn" id="ic-postCreate"></i>
-            <i onclick="showSection('profile')" class="fas fa-user-circle nav-btn" id="ic-profile"></i>
+            <i onclick="showSection('feed')" class="fas fa-home text-xl nav-active cursor-pointer" id="i-feed"></i>
+            <i onclick="showSection('reels')" class="fas fa-play-circle text-xl text-gray-400 cursor-pointer" id="i-reels"></i>
+            <i onclick="showSection('post')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer" id="i-post"></i>
+            <i onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer" id="i-profile"></i>
         </div>
-    </div>
-
-    <div id="imgModal" class="fixed inset-0 bg-black/90 z-[10000] hidden flex items-center justify-center" onclick="this.classList.add('hidden')">
-        <img id="fullImg" src="" class="max-w-full max-h-full">
     </div>
 
     <script>
@@ -138,66 +104,124 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- ভেরিফাইড ব্যাজ লজিক ---
-        function getBadgeClass(idx) {
-            const colors = ['badge-blue', 'badge-black', 'badge-yellow', 'badge-red', 'badge-green'];
-            return colors[idx % 5];
-        }
-
-        // --- অথেন্টিকেশন ফাংশনসমূহ ---
         function toggleAuth(type) {
-            document.getElementById('loginBox').classList.add('hidden');
-            document.getElementById('signupBox').classList.add('hidden');
-            document.getElementById('resetBox').classList.add('hidden');
-            document.getElementById(type + 'Box').classList.remove('hidden');
+            ['login', 'signup', 'reset'].forEach(t => document.getElementById(t+'Box').classList.add('hidden'));
+            document.getElementById(type+'Box').classList.remove('hidden');
         }
 
-        function handleSignup() {
-            const u = document.getElementById('regUser').value.trim().toLowerCase();
-            const p = document.getElementById('regPass').value.trim();
-            if(!u || !p) return alert("দয়া করে ইউজারনাম ও পাসওয়ার্ড দিন!");
-            if(u.length < 3) return alert("ইউজারনাম বড় দিন!");
+        // --- রেজিস্ট্রেশন ---
+        function doSignup() {
+            const name = document.getElementById('rName').value.trim();
+            const contact = document.getElementById('rEmail').value.trim();
+            const pass = document.getElementById('rPass').value.trim();
+            if(!name || !contact || !pass) return alert("সব ঘর পূরণ করুন!");
 
-            db.ref('users/' + u).once('value', snap => {
-                if(snap.exists()) {
-                    alert("এই ইউজারনামটি ইতিমধ্যে ব্যবহার করা হয়েছে!");
-                } else {
-                    db.ref('users').once('value', uSnap => {
-                        const idx = uSnap.numChildren();
-                        const userData = { name: u, pass: p, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", followers: 0, joinIndex: idx };
-                        db.ref('users/' + u).set(userData).then(() => {
-                            alert("রেজিস্ট্রেশন সফল! এখন লগইন করুন।");
-                            toggleAuth('login');
-                        });
+            db.ref('users/' + name).once('value', snap => {
+                if(snap.exists()) return alert("এই নামটি ইতিমধ্যে আছে!");
+                db.ref('users').once('value', uSnap => {
+                    const idx = uSnap.numChildren();
+                    const data = { name, contact, pass, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", followers: 0, joinIndex: idx };
+                    db.ref('users/' + name).set(data).then(() => {
+                        db.ref('messages/' + name + '_admin').push({ sender: "Admin", text: "৫০০০ মেম্বার হলে ইনকাম শুরু হবে!" });
+                        alert("রেজিস্ট্রেশন সফল!"); toggleAuth('login');
                     });
-                }
+                });
             });
         }
 
-        function handleLogin() {
-            const u = document.getElementById('loginUser').value.trim().toLowerCase();
-            const p = document.getElementById('loginPass').value.trim();
+        // --- লগইন ---
+        function doLogin() {
+            const u = document.getElementById('lUser').value.trim();
+            const p = document.getElementById('lPass').value.trim();
             db.ref('users/' + u).once('value', snap => {
-                if(snap.exists() && snap.val().pass === p) {
-                    localStorage.setItem('freechatbook_user', JSON.stringify(snap.val()));
+                const d = snap.val();
+                if(d && d.pass === p) {
+                    localStorage.setItem('freechatbook_user', JSON.stringify(d));
                     location.reload();
-                } else {
-                    alert("ভুল ইউজারনাম অথবা পাসওয়ার্ড!");
-                }
+                } else alert("ভুল তথ্য!");
             });
         }
 
-        function handleReset() {
-            const u = document.getElementById('resetUser').value.trim().toLowerCase();
-            if(!u) return alert("ইউজারনাম দিন!");
+        // --- পাসওয়ার্ড রিসেট ---
+        function doReset() {
+            const u = document.getElementById('resetInput').value.trim();
             db.ref('users/' + u).once('value', snap => {
-                if(snap.exists()) {
-                    alert("আপনার পাসওয়ার্ড হলো: " + snap.val().pass);
-                    toggleAuth('login');
-                } else {
-                    alert("এই ইউজারনামে কোনো একাউন্ট পাওয়া যায়নি!");
-                }
+                if(snap.exists()) alert("আপনার পাসওয়ার্ড: " + snap.val().pass);
+                else alert("ইউজার পাওয়া যায়নি!");
             });
         }
 
-        // --- অ্যাপ ফা
+        function getBadge(idx, followers) {
+            const colors = ['badge-blue', 'badge-black', 'badge-yellow', 'badge-red', 'badge-green'];
+            if(followers >= 1000) return `<i class="fas fa-check-circle badge-green"></i>`;
+            return `<i class="fas fa-check-circle ${colors[idx % 5]}"></i>`;
+        }
+
+        function showSection(id) {
+            ['feed', 'reels', 'post', 'profile'].forEach(s => {
+                document.getElementById(s+'Section').classList.add('hidden');
+                document.getElementById('i-'+s).classList.replace('text-blue-600', 'text-gray-400');
+            });
+            document.getElementById(id+'Section').classList.remove('hidden');
+            document.getElementById('i-'+id).classList.replace('text-gray-400', 'text-blue-600');
+            if(id === 'profile') loadProfile();
+        }
+
+        function loadFeed() {
+            db.ref('users').on('value', uSnap => {
+                const uData = uSnap.val();
+                db.ref('posts').on('value', snap => {
+                    const list = document.getElementById('feedList'); list.innerHTML = '';
+                    let ps = []; snap.forEach(c => ps.push({key:c.key, ...c.val()}));
+                    ps.reverse().forEach(p => {
+                        const info = uData[p.uName] || {joinIndex:0};
+                        list.innerHTML += `<div class="post-card p-4 text-left">
+                            <div class="flex items-center gap-2 mb-3">
+                                <img src="${p.uPfp}" class="w-9 h-9 rounded-full object-cover">
+                                <h4 class="font-bold text-sm">${p.uName} ${getBadge(info.joinIndex, info.followers)}</h4>
+                            </div>
+                            <p class="text-sm mb-2">${p.content}</p>
+                            ${p.image ? `<img src="${p.image}" class="w-full rounded-lg mb-2">` : ''}
+                        </div>`;
+                    });
+                });
+            });
+        }
+
+        function doPost() {
+            const txt = document.getElementById('pText').value;
+            const file = document.getElementById('pImg').files[0];
+            const reader = new FileReader();
+            const send = (img = "") => {
+                db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: txt, image: img, time: Date.now() }).then(()=>location.reload());
+            };
+            if(file) { reader.onload = e => send(e.target.result); reader.readAsDataURL(file); }
+            else if(txt) send();
+        }
+
+        function loadProfile() {
+            document.getElementById('pName').innerHTML = user.name + getBadge(user.joinIndex, user.followers);
+            document.getElementById('profilePfp').src = user.pfp;
+            db.ref('posts').orderByChild('uName').equalTo(user.name).once('value', snap => {
+                const m = document.getElementById('myPosts'); m.innerHTML = '';
+                snap.forEach(c => {
+                    const p = c.val();
+                    m.innerHTML += `<div class="bg-white p-3 rounded-xl mb-2 flex justify-between shadow-sm items-center">
+                        <span class="text-xs truncate w-40">${p.content || 'ছবি'}</span>
+                        <div class="flex gap-4"><i onclick="db.ref('posts/${c.key}').remove().then(()=>location.reload())" class="fas fa-trash text-red-500"></i></div>
+                    </div>`;
+                });
+            });
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        if(user) {
+            document.getElementById('authPage').remove();
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('navPfp').src = user.pfp;
+            loadFeed();
+        }
+    </script>
+</body>
+</html>
