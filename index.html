@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Messages & Calls</title>
+    <title>Freechatbook - Advanced Social Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,10 +14,12 @@
         body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
         .hidden { display: none !important; }
         .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .badge-blue { color: #0866FF; } .badge-green { color: #28a745; } .badge-black { color: #000; }
-        .active-nav { color: #0866FF !important; }
-        .chat-bubble-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 8px 12px; align-self: flex-end; max-width: 80%; }
-        .chat-bubble-other { background: #e4e6eb; color: black; border-radius: 18px 18px 18px 0; padding: 8px 12px; align-self: flex-start; max-width: 80%; }
+        .badge-blue { color: #0866FF; } .badge-black { color: #000; } .badge-yellow { color: #FFD700; }
+        .badge-red { color: #FF0000; } .badge-green { color: #28a745; }
+        .reel-video { height: 75vh; background: #000; border-radius: 15px; position: relative; margin-bottom: 15px; }
+        .comment-item { background: #f0f2f5; padding: 8px 12px; border-radius: 15px; margin-bottom: 5px; position: relative; }
+        .pfp-wrap { position: relative; width: 112px; height: 112px; margin: auto; }
+        .camera-btn { position: absolute; bottom: 5px; right: 5px; background: #0866FF; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; }
     </style>
 </head>
 <body>
@@ -33,11 +35,8 @@
 
         <div class="max-w-xl mx-auto p-3 pb-24">
             
-            <div id="feedSection"><div id="feedList"></div></div>
-
-            <div id="inboxSection" class="hidden">
-                <h2 class="font-bold mb-4 text-lg">মেসেজ</h2>
-                <div id="chatUserList" class="space-y-3 text-center text-gray-400 mt-10">যাদের সাথে ফ্রেন্ড আছেন তাদের মেসেজ দিন।</div>
+            <div id="feedSection">
+                <div id="feedList"></div>
             </div>
 
             <div id="requestsSection" class="hidden">
@@ -46,49 +45,39 @@
             </div>
 
             <div id="reelsSection" class="hidden">
-                <div id="reelList" class="space-y-4"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Reels</h2>
+                    <input type="file" id="reelFile" accept="video/*" class="hidden" onchange="uploadReel(this)">
+                    <button onclick="document.getElementById('reelFile').click()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs font-bold">Upload</button>
+                </div>
+                <div id="reelList"></div>
             </div>
 
             <div id="profileSection" class="hidden">
                 <div class="bg-white p-6 rounded-2xl text-center shadow-sm">
-                    <img id="profilePfp" src="" class="w-24 h-24 rounded-full mx-auto border-4 border-blue-100 object-cover">
+                    <div class="pfp-wrap">
+                        <img id="profilePfp" src="" class="w-28 h-28 rounded-full border-4 border-blue-100 object-cover">
+                        <label for="pfpUpdate" class="camera-btn"><i class="fas fa-camera text-sm"></i></label>
+                        <input type="file" id="pfpUpdate" class="hidden" accept="image/*" onchange="updateProfilePic(this)">
+                    </div>
                     <h2 id="pName" class="text-xl font-bold mt-2"></h2>
                     <p id="fCount" class="text-blue-600 font-bold text-sm">0 Followers</p>
                     <button onclick="logout()" class="mt-4 bg-red-50 text-red-600 px-4 py-1 rounded-lg text-xs font-bold">Logout</button>
                 </div>
+                <div id="myPosts" class="mt-4"></div>
             </div>
         </div>
 
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
             <i onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400 cursor-pointer" id="ic-feed"></i>
-            <i onclick="showSection('inbox')" class="fas fa-comment-dots text-xl text-gray-400 cursor-pointer" id="ic-inbox"></i>
-            <i onclick="document.getElementById('postModal').classList.remove('hidden')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
             <i onclick="showSection('reels')" class="fas fa-play-circle text-xl text-gray-400 cursor-pointer" id="ic-reels"></i>
+            <i onclick="document.getElementById('postModal').classList.remove('hidden')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
             <i onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer" id="ic-profile"></i>
         </div>
     </div>
 
-    <div id="personalChat" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
-        <div class="bg-white border-b p-3 flex justify-between items-center shadow-sm">
-            <div class="flex items-center gap-3">
-                <i onclick="document.getElementById('personalChat').classList.add('hidden')" class="fas fa-arrow-left cursor-pointer"></i>
-                <img id="chatUserPfp" src="" class="w-8 h-8 rounded-full border">
-                <span id="chatUserName" class="font-bold text-sm">Username</span>
-            </div>
-            <div class="flex gap-5 text-[#0866FF]">
-                <i onclick="alert('অডিও কল করা হচ্ছে...')" class="fas fa-phone-alt cursor-pointer"></i>
-                <i onclick="alert('ভিডিও কল করা হচ্ছে...')" class="fas fa-video cursor-pointer"></i>
-            </div>
-        </div>
-        <div id="messageDisplay" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-[#f0f2f5]"></div>
-        <div class="p-3 bg-white border-t flex gap-2">
-            <input id="chatInput" type="text" class="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none" placeholder="মেসেজ লিখুন...">
-            <button onclick="sendChatMessage()" class="text-[#0866FF] px-2"><i class="fas fa-paper-plane text-xl"></i></button>
-        </div>
-    </div>
-
     <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md p-6 rounded-2xl text-center">
+        <div class="bg-white w-full max-w-md p-6 rounded-2xl">
             <textarea id="pText" class="w-full bg-gray-100 p-3 rounded-lg outline-none mb-3" placeholder="কি ভাবছেন?"></textarea>
             <input type="file" id="pImg" class="text-xs mb-4">
             <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Post Now</button>
@@ -96,7 +85,7 @@
     </div>
 
     <script>
-        // Firebase Config (একই থাকবে)
+        // Firebase initialization (Same as before)
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
@@ -110,105 +99,162 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- ব্যাজ লজিক ---
+        if(!user) { window.location.href = "login.html"; } // লগইন না থাকলে রিডাইরেক্ট
+
         function getBadge(idx, followers) {
             const colors = ['badge-blue', 'badge-black', 'badge-yellow', 'badge-red', 'badge-green'];
             if(followers >= 1000) return `<i class="fas fa-check-circle badge-green"></i>`;
             return `<i class="fas fa-check-circle ${colors[idx % 5]}"></i>`;
         }
 
-        // --- সেকশন কন্ট্রোল ---
-        function showSection(id) {
-            ['feed','inbox','reels','profile','requests'].forEach(s => document.getElementById(s+'Section').classList.add('hidden'));
-            document.getElementById(id+'Section').classList.remove('hidden');
-            if(id === 'inbox') loadInboxList();
-            if(id === 'requests') loadRequests();
+        // --- প্রোফাইল পিকচার পরিবর্তন ---
+        function updateProfilePic(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                const imgBase64 = e.target.result;
+                db.ref('users/' + user.name).update({ pfp: imgBase64 });
+                user.pfp = imgBase64;
+                localStorage.setItem('freechatbook_user', JSON.stringify(user));
+                document.getElementById('profilePfp').src = imgBase64;
+                document.getElementById('navPfp').src = imgBase64;
+                alert("প্রোফাইল ছবি পরিবর্তন হয়েছে!");
+            };
+            reader.readAsDataURL(file);
         }
 
-        // --- ইনবক্স ও মেসেজিং সিস্টেম ---
-        let currentChatFriend = "";
-
-        function openChat(friendName, friendPfp) {
-            currentChatFriend = friendName;
-            document.getElementById('chatUserName').innerText = friendName;
-            document.getElementById('chatUserPfp').src = friendPfp;
-            document.getElementById('personalChat').classList.remove('hidden');
-            
-            const chatId = [user.name, friendName].sort().join("_");
-            db.ref('chats/' + chatId).on('value', snap => {
-                const box = document.getElementById('messageDisplay');
-                box.innerHTML = '';
-                snap.forEach(c => {
-                    const msg = c.val();
-                    const isMe = msg.sender === user.name;
-                    box.innerHTML += `<div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}">${msg.text}</div>`;
-                });
-                box.scrollTop = box.scrollHeight;
+        // --- ফ্রেন্ড রিকোয়েস্ট সিস্টেম ---
+        function sendFriendRequest(targetName) {
+            db.ref('requests/' + targetName + '/' + user.name).set({
+                from: user.name,
+                pfp: user.pfp,
+                time: Date.now()
             });
+            alert(targetName + "-কে রিকোয়েস্ট পাঠানো হয়েছে!");
         }
 
-        function sendChatMessage() {
-            const txt = document.getElementById('chatInput').value.trim();
-            if(!txt) return;
-            const chatId = [user.name, currentChatFriend].sort().join("_");
-            db.ref('chats/' + chatId).push({ sender: user.name, text: txt, time: Date.now() });
-            document.getElementById('chatInput').value = '';
-        }
-
-        function loadInboxList() {
-            // শুধুমাত্র ফলোয়ার বা ফ্রেন্ডদের এখানে দেখানো হবে
-            db.ref('users').once('value', snap => {
-                const list = document.getElementById('chatUserList');
+        function loadRequests() {
+            db.ref('requests/' + user.name).on('value', snap => {
+                const list = document.getElementById('requestList');
                 list.innerHTML = '';
+                if(!snap.exists()) list.innerHTML = "<p class='text-center text-gray-400'>No pending requests.</p>";
                 snap.forEach(child => {
-                    const u = child.val();
-                    if(u.name !== user.name) {
-                        list.innerHTML += `
-                        <div onclick="openChat('${u.name}', '${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer mb-2">
-                            <img src="${u.pfp}" class="w-12 h-12 rounded-full object-cover">
-                            <div class="text-left">
-                                <h4 class="font-bold text-sm">${u.name}</h4>
-                                <p class="text-[10px] text-blue-600">অনলাইনে আছেন</p>
+                    const req = child.val();
+                    list.innerHTML += `
+                        <div class="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <img src="${req.pfp}" class="w-10 h-10 rounded-full object-cover">
+                                <span class="font-bold">${req.from}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="acceptRequest('${req.from}')" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs">Accept</button>
+                                <button onclick="db.ref('requests/${user.name}/${req.from}').remove()" class="bg-gray-200 px-3 py-1 rounded-lg text-xs">Delete</button>
                             </div>
                         </div>`;
-                    }
                 });
             });
         }
 
-        // --- নিউজ ফিড ও রিকোয়েস্ট (আগের মতো) ---
+        function acceptRequest(sender) {
+            db.ref('users/' + user.name + '/followers').transaction(c => (c || 0) + 1);
+            db.ref('requests/' + user.name + '/' + sender).remove();
+            alert("এখন আপনারা বন্ধু!");
+        }
+
+        // --- ফিড ও কমেন্ট (এডিট/ডিলিট) ---
         function loadFeed() {
             db.ref('users').on('value', uSnap => {
-                const allU = uSnap.val();
+                const allUsers = uSnap.val();
                 db.ref('posts').on('value', snap => {
-                    const fl = document.getElementById('feedList'); fl.innerHTML = '';
+                    const list = document.getElementById('feedList'); list.innerHTML = '';
                     let ps = []; snap.forEach(c => ps.push({key:c.key, ...c.val()}));
                     ps.reverse().forEach(p => {
-                        const info = allU[p.uName] || {joinIndex:0, followers:0};
-                        fl.innerHTML += `
-                        <div class="post-card p-4 text-left">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="flex items-center gap-2">
-                                    <img src="${p.uPfp}" class="w-9 h-9 rounded-full object-cover">
-                                    <h4 class="font-bold text-sm">${p.uName} ${getBadge(info.joinIndex, info.followers)}</h4>
+                        const info = allUsers[p.uName] || {joinIndex:0, followers:0};
+                        list.innerHTML += `
+                            <div class="post-card p-4">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <img src="${p.uPfp}" class="w-9 h-9 rounded-full object-cover">
+                                        <h4 class="font-bold text-sm">${p.uName} ${getBadge(info.joinIndex, info.followers)}</h4>
+                                    </div>
+                                    ${p.uName !== user.name ? `<button onclick="sendFriendRequest('${p.uName}')" class="text-blue-600 text-xs font-bold bg-blue-50 px-3 py-1 rounded-full"><i class="fas fa-user-plus"></i> Add Friend</button>` : ''}
                                 </div>
-                                ${p.uName !== user.name ? `<button onclick="openChat('${p.uName}', '${p.uPfp}')" class="bg-blue-50 text-[#0866FF] px-3 py-1 rounded-full text-xs font-bold">Message</button>` : ''}
-                            </div>
-                            <p class="text-sm mb-2">${p.content}</p>
-                            ${p.image ? `<img src="${p.image}" class="w-full rounded-lg mb-2">` : ''}
-                        </div>`;
+                                <p class="text-sm mb-2">${p.content}</p>
+                                ${p.image ? `<img src="${p.image}" class="w-full rounded-lg mb-3">` : ''}
+                                <div class="flex gap-4 border-t pt-2 text-gray-500 font-bold text-xs">
+                                    <span onclick="toggleCommentBox('${p.key}')" class="cursor-pointer"><i class="far fa-comment"></i> কমেন্ট</span>
+                                </div>
+                                <div id="cmt-section-${p.key}" class="hidden mt-3">
+                                    <div id="cmt-list-${p.key}"></div>
+                                    <div class="flex gap-2 mt-2">
+                                        <input id="ci-${p.key}" class="flex-1 bg-gray-100 rounded-full px-3 py-1 text-xs outline-none" placeholder="কমেন্ট লিখুন...">
+                                        <button onclick="postComment('${p.key}')" class="text-blue-600 text-xs font-bold">Send</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                        renderComments(p.key);
                     });
                 });
             });
         }
 
-        // --- লগআউট ও ইনিশিয়াল ---
-        function logout() { localStorage.clear(); location.reload(); }
-        if(user) {
-            document.getElementById('navPfp').src = user.pfp;
-            document.getElementById('pName').innerText = user.name;
-            loadFeed();
+        function postComment(postKey) {
+            const txt = document.getElementById('ci-' + postKey).value;
+            if(!txt) return;
+            db.ref('comments/' + postKey).push({ uName: user.name, text: txt, time: Date.now() });
+            document.getElementById('ci-' + postKey).value = '';
         }
+
+        function renderComments(postKey) {
+            db.ref('comments/' + postKey).on('value', snap => {
+                const box = document.getElementById('cmt-list-' + postKey);
+                if(!box) return; box.innerHTML = '';
+                snap.forEach(c => {
+                    const d = c.val();
+                    const isMe = d.uName === user.name;
+                    box.innerHTML += `
+                        <div class="comment-item text-xs">
+                            <div class="flex justify-between">
+                                <b>${d.uName}</b>
+                                ${isMe ? `
+                                <div class="flex gap-2 text-[10px] text-gray-400">
+                                    <span onclick="editComment('${postKey}','${c.key}','${d.text}')" class="cursor-pointer text-blue-500">Edit</span>
+                                    <span onclick="db.ref('comments/${postKey}/${c.key}').remove()" class="cursor-pointer text-red-500">Delete</span>
+                                </div>` : ''}
+                            </div>
+                            <p>${d.text}</p>
+                        </div>`;
+                });
+            });
+        }
+
+        function editComment(postKey, cKey, oldText) {
+            const newText = prompt("কমেন্ট ইডিট করুন:", oldText);
+            if(newText) db.ref('comments/' + postKey + '/' + cKey).update({ text: newText });
+        }
+
+        function toggleCommentBox(key) {
+            document.getElementById('cmt-section-' + key).classList.toggle('hidden');
+        }
+
+        function showSection(id) {
+            ['feed','reels','profile','requests'].forEach(s => document.getElementById(s+'Section').classList.add('hidden'));
+            document.getElementById(id+'Section').classList.remove('hidden');
+            if(id === 'requests') loadRequests();
+            if(id === 'profile') loadProfile();
+        }
+
+        function loadProfile() {
+            document.getElementById('pName').innerHTML = user.name + getBadge(user.joinIndex, user.followers);
+            document.getElementById('profilePfp').src = user.pfp;
+            document.getElementById('fCount').innerText = (user.followers || 0) + " Followers";
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        // Initial Load
+        document.getElementById('navPfp').src = user.pfp;
+        loadFeed();
     </script>
 </body>
 </html>
