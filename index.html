@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Active Status Edition</title>
+    <title>Freechatbook - Seen & Typing Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -15,17 +15,13 @@
         .hidden { display: none !important; }
         .active-nav { color: #0866FF !important; }
         
-        /* অনলাইন ইন্ডিকেটর */
-        .online-dot { width: 12px; height: 12px; background-color: #31a24c; border: 2px solid white; border-radius: 50%; position: absolute; bottom: 2px; right: 2px; }
-        .active-text { color: #31a24c; font-size: 11px; font-weight: bold; }
-        
         /* চ্যাট বাবল স্টাইল */
         .chat-bubble-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 10px 14px; align-self: flex-end; max-width: 75%; position: relative; }
         .chat-bubble-other { background: #e4e6eb; color: black; border-radius: 18px 18px 18px 0; padding: 10px 14px; align-self: flex-start; max-width: 75%; }
         
         .status-tick { font-size: 10px; margin-top: 2px; text-align: right; color: #65676b; }
         .seen-tick { color: #0866FF !important; }
-        .typing-text { font-size: 11px; color: #0866FF; font-style: italic; }
+        .typing-text { font-size: 11px; color: #0866FF; font-style: italic; margin-left: 10px; height: 15px; }
         
         .nav-btn { font-size: 1.4rem; color: #65676b; cursor: pointer; }
         .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -42,13 +38,10 @@
             </div>
         </nav>
 
-        <div id="activeFriendsScroll" class="bg-white p-3 border-b flex gap-4 overflow-x-auto">
-            </div>
-
         <div class="max-w-xl mx-auto p-3 pb-24">
             <div id="feedSection"><div id="feedList"></div></div>
             <div id="inboxSection" class="hidden">
-                <h2 class="font-bold mb-4 text-lg">মেসেঞ্জর</h2>
+                <h2 class="font-bold mb-4 text-lg">চ্যাটলিস্ট</h2>
                 <div id="chatUserList" class="space-y-2"></div>
             </div>
             <div id="reelsSection" class="hidden"><div id="reelList" class="space-y-4"></div></div>
@@ -75,32 +68,30 @@
         <div class="bg-white border-b p-3 flex justify-between items-center shadow-sm">
             <div class="flex items-center gap-3">
                 <i onclick="closeChat()" class="fas fa-arrow-left cursor-pointer"></i>
-                <div class="relative">
-                    <img id="chatUserPfp" src="" class="w-9 h-9 rounded-full border object-cover">
-                    <div id="chatActiveDot" class="hidden online-dot"></div>
-                </div>
+                <img id="chatUserPfp" src="" class="w-8 h-8 rounded-full border object-cover">
                 <div>
                     <span id="chatUserName" class="font-bold text-sm block leading-tight">User</span>
                     <span id="typingStatus" class="typing-text"></span>
-                    <span id="headerActiveText" class="active-text hidden">Active Now</span>
                 </div>
             </div>
             <div class="flex gap-5 text-[#0866FF]">
-                <i class="fas fa-phone-alt cursor-pointer"></i>
-                <i class="fas fa-video cursor-pointer"></i>
+                <i class="fas fa-phone-alt"></i>
+                <i class="fas fa-video"></i>
             </div>
         </div>
         
         <div id="messageDisplay" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-gray-50"></div>
         
-        <div class="p-3 bg-white border-t flex gap-2">
-            <input id="chatInput" type="text" oninput="handleTyping()" class="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none border" placeholder="Aa">
-            <button onclick="sendChatMessage()" class="text-[#0866FF] px-2"><i class="fas fa-paper-plane text-xl"></i></button>
+        <div class="p-3 bg-white border-t flex flex-col gap-1">
+            <div class="flex gap-2">
+                <input id="chatInput" type="text" oninput="handleTyping()" class="flex-1 bg-gray-100 rounded-full px-4 py-2 outline-none border" placeholder="মেসেজ লিখুন...">
+                <button onclick="sendChatMessage()" class="text-[#0866FF] px-2"><i class="fas fa-paper-plane text-xl"></i></button>
+            </div>
         </div>
     </div>
 
     <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md p-6 rounded-2xl text-center">
+        <div class="bg-white w-full max-w-md p-6 rounded-2xl">
             <textarea id="pText" class="w-full bg-gray-50 p-3 rounded-lg outline-none mb-3" placeholder="কি ভাবছেন?"></textarea>
             <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Post Now</button>
         </div>
@@ -120,43 +111,21 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- Active Status Logic ---
-        function setOnlineStatus() {
-            if(!user) return;
-            const statusRef = db.ref('status/' + user.name);
-            statusRef.set(true);
-            statusRef.onDisconnect().set(false); // ট্যাব বন্ধ করলে অফলাইন হবে
-        }
-
-        function loadActiveLists() {
-            db.ref('status').on('value', snap => {
-                const onlineUsers = snap.val() || {};
-                const scrollList = document.getElementById('activeFriendsScroll');
-                const inboxList = document.getElementById('chatUserList');
-                scrollList.innerHTML = '';
-                
-                db.ref('users').once('value', uSnap => {
-                    uSnap.forEach(child => {
-                        const u = child.val();
-                        if(u.name !== user.name && onlineUsers[u.name] === true) {
-                            // উপরের স্ক্রল লিস্টে একটিভ ফ্রেন্ড
-                            scrollList.innerHTML += `
-                            <div onclick="openChat('${u.name}', '${u.pfp}')" class="relative flex-shrink-0 cursor-pointer">
-                                <img src="${u.pfp}" class="w-14 h-14 rounded-full border-2 border-green-500 p-0.5 object-cover">
-                                <div class="online-dot"></div>
-                                <p class="text-[10px] text-center mt-1 font-bold truncate w-14">${u.name}</p>
-                            </div>`;
-                        }
-                    });
-                });
-            });
-        }
-
-        // --- Typing & Messenger Functions (Updated) ---
         let currentChatFriend = "";
         let chatId = "";
         let typingTimeout;
 
+        function showSection(id) {
+            ['feed','inbox','reels','profile'].forEach(s => {
+                document.getElementById(s+'Section').classList.add('hidden');
+                document.getElementById('ic-'+s).classList.remove('active-nav');
+            });
+            document.getElementById(id+'Section').classList.remove('hidden');
+            document.getElementById('ic-'+id).classList.add('active-nav');
+            if(id === 'inbox') loadInboxList();
+        }
+
+        // --- Typing Status ---
         function handleTyping() {
             db.ref('typing/' + chatId + '/' + user.name).set(true);
             clearTimeout(typingTimeout);
@@ -172,31 +141,40 @@
             document.getElementById('chatUserPfp').src = friendPfp;
             document.getElementById('personalChat').classList.remove('hidden');
 
-            // Active Now Status in Chat Header
-            db.ref('status/' + friendName).on('value', snap => {
-                const isOnline = snap.val() === true;
-                document.getElementById('chatActiveDot').classList.toggle('hidden', !isOnline);
-                document.getElementById('headerActiveText').classList.toggle('hidden', !isOnline);
+            // Seen Update: চ্যাট খুললে অপরপক্ষের পাঠানো আনসিন মেসেজগুলো সিন হয়ে যাবে
+            db.ref('chats/' + chatId).once('value', snap => {
+                snap.forEach(c => {
+                    if(c.val().sender !== user.name) {
+                        db.ref('chats/' + chatId + '/' + c.key).update({seen: true});
+                    }
+                });
             });
 
-            // Seen Update & Listen Messages
+            // Listen to Messages
             db.ref('chats/' + chatId).on('value', snap => {
                 const box = document.getElementById('messageDisplay');
                 box.innerHTML = '';
                 snap.forEach(c => {
                     const msg = c.val();
                     const isMe = msg.sender === user.name;
-                    if(!isMe && !msg.seen) db.ref('chats/' + chatId + '/' + c.key).update({seen: true});
-                    
+                    const statusText = isMe ? (msg.seen ? 'Seen' : 'Sent') : '';
+                    const statusClass = msg.seen ? 'seen-tick' : '';
+
                     box.innerHTML += `
                         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                            <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}">${msg.text}</div>
-                            ${isMe ? `<span class="status-tick ${msg.seen ? 'seen-tick' : ''}">${msg.seen ? 'Seen' : 'Sent'}</span>` : ''}
+                            <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'}">
+                                ${msg.text}
+                            </div>
+                            <div class="flex gap-2 items-center">
+                                ${isMe ? `<span onclick="unsend('${c.key}')" class="text-[9px] text-red-400 cursor-pointer">Unsend</span>` : ''}
+                                <span class="status-tick ${statusClass}">${statusText}</span>
+                            </div>
                         </div>`;
                 });
                 box.scrollTop = box.scrollHeight;
             });
 
+            // Listen to Typing Status
             db.ref('typing/' + chatId + '/' + friendName).on('value', snap => {
                 document.getElementById('typingStatus').innerText = snap.val() ? 'Typing...' : '';
             });
@@ -205,19 +183,24 @@
         function sendChatMessage() {
             const txt = document.getElementById('chatInput').value.trim();
             if(!txt) return;
-            db.ref('chats/' + chatId).push({ sender: user.name, text: txt, seen: false, time: Date.now() });
+            db.ref('chats/' + chatId).push({
+                sender: user.name,
+                text: txt,
+                seen: false,
+                time: Date.now()
+            });
             document.getElementById('chatInput').value = '';
             db.ref('typing/' + chatId + '/' + user.name).set(false);
         }
 
-        function showSection(id) {
-            ['feed','inbox','reels','profile'].forEach(s => {
-                document.getElementById(s+'Section').classList.add('hidden');
-                document.getElementById('ic-'+s).classList.remove('active-nav');
-            });
-            document.getElementById(id+'Section').classList.remove('hidden');
-            document.getElementById('ic-'+id).classList.add('active-nav');
-            if(id === 'inbox') loadInboxList();
+        function unsend(key) {
+            if(confirm("Unsend message?")) db.ref('chats/' + chatId + '/' + key).remove();
+        }
+
+        function closeChat() {
+            document.getElementById('personalChat').classList.add('hidden');
+            db.ref('chats/' + chatId).off();
+            db.ref('typing/' + chatId + '/' + currentChatFriend).off();
         }
 
         function loadInboxList() {
@@ -227,20 +210,12 @@
                 snap.forEach(child => {
                     const u = child.val();
                     if(u.name !== user.name) {
-                        db.ref('status/' + u.name).once('value', sSnap => {
-                            const isOnline = sSnap.val() === true;
-                            list.innerHTML += `
-                            <div onclick="openChat('${u.name}', '${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer mb-2">
-                                <div class="relative">
-                                    <img src="${u.pfp}" class="w-12 h-12 rounded-full object-cover">
-                                    ${isOnline ? '<div class="online-dot"></div>' : ''}
-                                </div>
-                                <div class="flex-1 text-left">
-                                    <h4 class="font-bold text-sm">${u.name}</h4>
-                                    <p class="text-[10px] ${isOnline ? 'text-green-500 font-bold' : 'text-gray-400'}">${isOnline ? 'Active Now' : 'Offline'}</p>
-                                </div>
-                            </div>`;
-                        });
+                        list.innerHTML += `
+                        <div onclick="openChat('${u.name}', '${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer mb-2">
+                            <img src="${u.pfp}" class="w-12 h-12 rounded-full object-cover">
+                            <div class="text-left flex-1"><h4 class="font-bold text-sm">${u.name}</h4></div>
+                            <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                        </div>`;
                     }
                 });
             });
@@ -251,9 +226,13 @@
                 const fl = document.getElementById('feedList'); fl.innerHTML = '';
                 let ps = []; snap.forEach(c => ps.push({key:c.key, ...c.val()}));
                 ps.reverse().forEach(p => {
-                    fl.innerHTML += `<div class="post-card p-4">
+                    fl.innerHTML += `
+                    <div class="post-card p-4">
                         <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center gap-2"><img src="${p.uPfp}" class="w-8 h-8 rounded-full border"><b>${p.uName}</b></div>
+                            <div class="flex items-center gap-2">
+                                <img src="${p.uPfp}" class="w-8 h-8 rounded-full">
+                                <b class="text-sm">${p.uName}</b>
+                            </div>
                             <button onclick="openChat('${p.uName}', '${p.uPfp}')" class="text-[#0866FF] text-xs font-bold">Message</button>
                         </div>
                         <p class="text-sm">${p.content}</p>
@@ -262,14 +241,9 @@
             });
         }
 
-        function closeChat() { document.getElementById('personalChat').classList.add('hidden'); }
-        function logout() { db.ref('status/'+user.name).set(false); localStorage.clear(); location.reload(); }
-
         if(user) {
             document.getElementById('navPfp').src = user.pfp;
             document.getElementById('pName').innerText = user.name;
-            setOnlineStatus();
-            loadActiveLists();
             loadFeed();
         }
     </script>
