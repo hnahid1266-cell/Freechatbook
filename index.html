@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Official Badge & Follow System</title>
-    
-    <meta name="description" content="Freechatbook - Connect, Share Reels and Earn.">
-    <meta name="keywords" content="freechat, chatbook, freechatbooklive">
+    <title>Freechatbook - Ultimate Fast Version</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -14,20 +11,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
         .hidden { display: none !important; }
         .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 15px; }
         .active-nav { color: #0866FF !important; }
-        
-        /* কালার ব্যাজসমূহ */
-        .badge-blue { color: #0866FF; } .badge-black { color: #000; } .badge-yellow { color: #FFD700; }
-        .badge-red { color: #FF0000; } .badge-green { color: #28a745; }
-        
-        .time-text { font-size: 10px; color: #65676b; }
-        .follow-btn { background: #0866FF; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; transition: 0.2s; }
-        .follow-btn:active { transform: scale(0.95); }
-        .pfp-wrap { position: relative; width: 120px; height: 120px; margin: auto; }
-        .camera-icon { position: absolute; bottom: 5px; right: 5px; background: #0866FF; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; cursor: pointer; }
+        .badge-blue { color: #0866FF; } .badge-black { color: #000; }
+        .follow-btn { background: #0866FF; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 11px; }
+        .reel-video { height: 75vh; width: 100%; background: #000; border-radius: 15px; object-fit: cover; }
+        .reel-actions { position: absolute; right: 15px; bottom: 80px; display: flex; flex-direction: column; gap: 20px; color: white; text-align: center; }
     </style>
 </head>
 <body>
@@ -39,30 +30,30 @@
         </nav>
 
         <div class="max-w-xl mx-auto p-3 pb-24">
-            <div id="feedSection">
-                <div id="feedList"></div>
+            <div id="feedSection"><div id="feedList"></div></div>
+
+            <div id="reelsSection" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold">Reels</h2>
+                    <button onclick="document.getElementById('reelUpload').click()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs">Upload</button>
+                    <input type="file" id="reelUpload" class="hidden" accept="video/*" onchange="uploadReel(this)">
+                </div>
+                <div id="reelList" class="space-y-6"></div>
             </div>
 
             <div id="profileSection" class="hidden">
-                <div class="bg-white p-6 rounded-2xl text-center shadow-sm mb-4">
-                    <div class="pfp-wrap">
-                        <img id="profilePfp" src="" class="w-full h-full rounded-full border-4 border-blue-500 object-cover">
-                        <label for="pfpUpdate" class="camera-icon"><i class="fas fa-camera"></i></label>
-                        <input type="file" id="pfpUpdate" class="hidden" accept="image/*" onchange="updateProfilePic(this)">
-                    </div>
-                    <h2 id="pNameDisplay" class="text-2xl font-bold mt-4 flex justify-center items-center gap-2"></h2>
-                    <p id="followerDisplay" class="text-blue-600 font-bold text-sm">0 Followers</p>
-                    <div class="mt-6 flex gap-2">
-                        <button onclick="editName()" class="flex-1 bg-gray-100 py-2 rounded-lg font-bold text-sm">Edit Name</button>
-                        <button onclick="logout()" class="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-bold text-sm">Logout</button>
-                    </div>
+                <div class="bg-white p-6 rounded-2xl text-center shadow-sm">
+                    <img id="profilePfp" src="" class="w-28 h-28 rounded-full mx-auto border-4 border-blue-500 object-cover">
+                    <h2 id="pNameDisplay" class="text-2xl font-bold mt-2"></h2>
+                    <p id="fCountDisplay" class="text-blue-600 font-bold text-sm">0 Followers</p>
+                    <div id="profileActions" class="mt-4 flex gap-2"></div>
                 </div>
-                <div id="myPostsList"></div>
             </div>
         </div>
 
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
             <i onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400 cursor-pointer" id="ic-feed"></i>
+            <i onclick="showSection('reels')" class="fas fa-play-circle text-xl text-gray-400 cursor-pointer" id="ic-reels"></i>
             <i onclick="document.getElementById('postModal').classList.remove('hidden')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
             <i onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer" id="ic-profile"></i>
         </div>
@@ -70,7 +61,7 @@
 
     <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md p-6 rounded-2xl">
-            <textarea id="postInput" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-4 border" placeholder="আপনার মনে কি আছে?"></textarea>
+            <textarea id="pText" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-4" placeholder="কি ভাবছেন?"></textarea>
             <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Post Now</button>
         </div>
     </div>
@@ -89,110 +80,100 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- সময় ফাংশন ---
-        function getTimeAgo(time) {
-            const diff = Math.floor((Date.now() - time) / 1000);
-            if (diff < 60) return "এইমাত্র";
-            if (diff < 3600) return Math.floor(diff / 60) + " মিনিট আগে";
-            if (diff < 86400) return Math.floor(diff / 3600) + " ঘণ্টা আগে";
-            return Math.floor(diff / 86400) + " দিন আগে";
-        }
-
-        // --- ব্যাজ লজিক ---
-        function getBadge(idx) {
-            const colors = ['badge-blue', 'badge-black', 'badge-yellow', 'badge-red', 'badge-green'];
-            return `<i class="fas fa-check-circle ${colors[idx % 5]}"></i>`;
-        }
-
-        // --- ফলো সিস্টেম ---
+        // ফলো ফাংশন
         function follow(target) {
             if(target === user.name) return;
             db.ref('users/' + target + '/followers').transaction(c => (c || 0) + 1);
-            alert(target + "-কে ফলো করা হয়েছে!");
+            alert(target + " কে ফলো করা হয়েছে!");
         }
 
-        // --- নিউজ ফিড (নতুন পোস্ট আগে) ---
-        function loadFeed() {
-            db.ref('users').on('value', uSnap => {
-                const allUsers = uSnap.val();
-                db.ref('posts').on('value', snap => {
-                    const list = document.getElementById('feedList'); list.innerHTML = '';
-                    let posts = [];
-                    snap.forEach(c => posts.push({key: c.key, ...c.val()}));
-                    
-                    posts.sort((a, b) => b.time - a.time); // সর্টিং
+        // অন্যের প্রোফাইল দেখা
+        function viewUserProfile(name) {
+            db.ref('users/' + name).once('value', snap => {
+                const d = snap.val();
+                document.getElementById('pNameDisplay').innerText = d.name;
+                document.getElementById('profilePfp').src = d.pfp;
+                document.getElementById('fCountDisplay').innerText = (d.followers || 0) + " Followers";
+                
+                let actions = document.getElementById('profileActions');
+                actions.innerHTML = name !== user.name ? 
+                    `<button onclick="follow('${name}')" class="bg-blue-600 text-white flex-1 py-2 rounded-lg font-bold">ফলো করুন</button>` : 
+                    `<button onclick="logout()" class="bg-red-50 text-red-600 flex-1 py-2 rounded-lg font-bold">Logout</button>`;
+                
+                showSection('profile');
+            });
+        }
 
-                    posts.forEach(p => {
-                        const info = allUsers[p.uName] || {joinIndex: 0};
-                        list.innerHTML += `
-                        <div class="post-card">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="flex items-center gap-2">
-                                    <img src="${p.uPfp}" class="w-10 h-10 rounded-full object-cover border">
-                                    <div>
-                                        <h4 class="font-bold text-sm">${p.uName} ${getBadge(info.joinIndex)}</h4>
-                                        <p class="time-text">${getTimeAgo(p.time)}</p>
-                                    </div>
-                                </div>
-                                ${p.uName !== user.name ? `<button onclick="follow('${p.uName}')" class="follow-btn">Follow +</button>` : ''}
+        // রিলস আপলোড ও লোড
+        function uploadReel(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                db.ref('reels').push({ uName: user.name, uPfp: user.pfp, video: e.target.result, likes: 0, time: Date.now() });
+                alert("রিলস আপলোড হয়েছে!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadReels() {
+            db.ref('reels').on('value', snap => {
+                const list = document.getElementById('reelList'); list.innerHTML = '';
+                snap.forEach(c => {
+                    const r = c.val();
+                    list.innerHTML += `
+                        <div class="relative reel-box">
+                            <video class="reel-video" src="${r.video}" loop onclick="this.paused?this.play():this.pause()"></video>
+                            <div class="reel-actions">
+                                <div onclick="alert('Liked!')"><i class="fas fa-heart text-2xl text-red-500"></i><p class="text-xs">Like</p></div>
+                                <div onclick="alert('Comment section opening...')"><i class="fas fa-comment text-2xl"></i><p class="text-xs">Comment</p></div>
+                                <div onclick="alert('Sharing...')"><i class="fas fa-share text-2xl"></i><p class="text-xs">Share</p></div>
                             </div>
-                            <p class="text-sm text-gray-800">${p.content}</p>
+                            <div class="absolute bottom-4 left-4 text-white">
+                                <b class="text-sm">@${r.uName}</b>
+                            </div>
                         </div>`;
-                    });
                 });
             });
         }
 
-        // --- প্রোফাইল আপডেট ---
-        function updateProfilePic(input) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = e.target.result;
-                db.ref('users/' + user.name).update({ pfp: img }).then(() => {
-                    user.pfp = img;
-                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
-                    location.reload();
+        // ফিড ও ফলো বাটন
+        function loadFeed() {
+            db.ref('posts').on('value', snap => {
+                const list = document.getElementById('feedList'); list.innerHTML = '';
+                let posts = []; snap.forEach(c => posts.push({key: c.key, ...c.val()}));
+                posts.reverse().forEach(p => {
+                    list.innerHTML += `
+                    <div class="post-card">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2 cursor-pointer" onclick="viewUserProfile('${p.uName}')">
+                                <img src="${p.uPfp}" class="w-10 h-10 rounded-full object-cover">
+                                <div><h4 class="font-bold text-sm">${p.uName}</h4><p class="text-[10px] text-gray-400">Public</p></div>
+                            </div>
+                            ${p.uName !== user.name ? `<button onclick="follow('${p.uName}')" class="follow-btn">ফলো করুন</button>` : ''}
+                        </div>
+                        <p class="text-sm">${p.content}</p>
+                    </div>`;
                 });
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-
-        function editName() {
-            const n = prompt("আপনার নতুন নাম লিখুন:", user.name);
-            if(n && n !== user.name) {
-                db.ref('users/' + user.name).update({ name: n }).then(() => {
-                    user.name = n;
-                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
-                    location.reload();
-                });
-            }
+            });
         }
 
         function showSection(id) {
-            ['feed', 'profile'].forEach(s => {
-                document.getElementById(s + 'Section').classList.add('hidden');
-                document.getElementById('ic-' + s).classList.remove('active-nav');
+            ['feed','reels','profile'].forEach(s => {
+                document.getElementById(s+'Section').classList.add('hidden');
+                document.getElementById('ic-'+s)?.classList.remove('active-nav');
             });
-            document.getElementById(id + 'Section').classList.remove('hidden');
-            document.getElementById('ic-' + id).classList.add('active-nav');
-            if(id === 'profile') loadProfileData();
-        }
-
-        function loadProfileData() {
-            db.ref('users/' + user.name).once('value', snap => {
-                const d = snap.val();
-                document.getElementById('pNameDisplay').innerHTML = d.name + " " + getBadge(d.joinIndex);
-                document.getElementById('profilePfp').src = d.pfp;
-                document.getElementById('followerDisplay').innerText = (d.followers || 0) + " Followers";
-            });
+            document.getElementById(id+'Section').classList.remove('hidden');
+            document.getElementById('ic-'+id)?.classList.add('active-nav');
+            if(id === 'reels') loadReels();
+            if(id === 'profile' && !document.getElementById('pNameDisplay').innerText) viewUserProfile(user.name);
         }
 
         function submitPost() {
-            const txt = document.getElementById('postInput').value.trim();
+            const txt = document.getElementById('pText').value.trim();
             if(!txt) return;
             db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: txt, time: Date.now() });
             document.getElementById('postModal').classList.add('hidden');
-            document.getElementById('postInput').value = '';
+            document.getElementById('pText').value = '';
         }
 
         function logout() { localStorage.clear(); location.reload(); }
@@ -202,11 +183,11 @@
             loadFeed();
             showSection('feed');
         } else {
-            // গেস্ট লগইন সিমুলেশন
-            let n = prompt("আপনার ইউজারনাম দিন:");
+            let n = prompt("ইউজারনাম:");
             if(n) {
-                let d = {name: n, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", joinIndex: 0};
+                let d = {name: n, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", followers: 0};
                 localStorage.setItem('freechatbook_user', JSON.stringify(d));
+                db.ref('users/'+n).set(d);
                 location.reload();
             }
         }
