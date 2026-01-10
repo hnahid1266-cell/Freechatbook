@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Pro Edition</title>
+    <title>Freechatbook - Official Badge & Follow System</title>
+    
+    <meta name="description" content="Freechatbook - Connect, Share Reels and Earn.">
+    <meta name="keywords" content="freechat, chatbook, freechatbooklive">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -15,11 +18,16 @@
         .hidden { display: none !important; }
         .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 15px; }
         .active-nav { color: #0866FF !important; }
-        .badge-blue { color: #0866FF; } .badge-black { color: #000; } .badge-green { color: #28a745; }
+        
+        /* কালার ব্যাজসমূহ */
+        .badge-blue { color: #0866FF; } .badge-black { color: #000; } .badge-yellow { color: #FFD700; }
+        .badge-red { color: #FF0000; } .badge-green { color: #28a745; }
+        
         .time-text { font-size: 10px; color: #65676b; }
-        .follow-btn { background: #e7f3ff; color: #1877f2; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; transition: 0.2s; }
-        .follow-btn:active { transform: scale(0.9); }
-        .pfp-overlay { position: absolute; bottom: 0; right: 0; background: #0866FF; border-radius: 50%; width: 30px; height: 30px; display: flex; items-center; justify-content: center; color: white; border: 2px solid white; cursor: pointer; }
+        .follow-btn { background: #0866FF; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; transition: 0.2s; }
+        .follow-btn:active { transform: scale(0.95); }
+        .pfp-wrap { position: relative; width: 120px; height: 120px; margin: auto; }
+        .camera-icon { position: absolute; bottom: 5px; right: 5px; background: #0866FF; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -27,9 +35,7 @@
     <div id="mainApp">
         <nav class="bg-white sticky top-0 border-b p-3 flex justify-between items-center px-4 z-50 shadow-sm">
             <h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
-            <div class="flex items-center gap-4">
-                <img id="navPfp" onclick="showSection('profile')" src="" class="w-9 h-9 rounded-full border-2 border-blue-500 object-cover cursor-pointer">
-            </div>
+            <img id="navPfp" onclick="showSection('profile')" src="" class="w-9 h-9 rounded-full border-2 border-blue-500 object-cover cursor-pointer">
         </nav>
 
         <div class="max-w-xl mx-auto p-3 pb-24">
@@ -38,24 +44,20 @@
             </div>
 
             <div id="profileSection" class="hidden">
-                <div class="bg-white p-6 rounded-2xl text-center shadow-sm relative">
-                    <div class="relative w-32 h-32 mx-auto">
-                        <img id="profilePfp" src="" class="w-32 h-32 rounded-full border-4 border-blue-100 object-cover shadow-lg">
-                        <label for="updatePfpInput" class="pfp-overlay"><i class="fas fa-camera"></i></label>
-                        <input type="file" id="updatePfpInput" class="hidden" accept="image/*" onchange="updateProfileImg(this)">
+                <div class="bg-white p-6 rounded-2xl text-center shadow-sm mb-4">
+                    <div class="pfp-wrap">
+                        <img id="profilePfp" src="" class="w-full h-full rounded-full border-4 border-blue-500 object-cover">
+                        <label for="pfpUpdate" class="camera-icon"><i class="fas fa-camera"></i></label>
+                        <input type="file" id="pfpUpdate" class="hidden" accept="image/*" onchange="updateProfilePic(this)">
                     </div>
-                    
-                    <div class="mt-4 flex flex-col items-center">
-                        <div class="flex items-center gap-2">
-                            <h2 id="pNameDisplay" class="text-2xl font-bold"></h2>
-                            <i onclick="editUserName()" class="fas fa-pen text-xs text-gray-400 cursor-pointer"></i>
-                        </div>
-                        <p id="fCountDisplay" class="text-blue-600 font-bold text-sm">0 Followers</p>
+                    <h2 id="pNameDisplay" class="text-2xl font-bold mt-4 flex justify-center items-center gap-2"></h2>
+                    <p id="followerDisplay" class="text-blue-600 font-bold text-sm">0 Followers</p>
+                    <div class="mt-6 flex gap-2">
+                        <button onclick="editName()" class="flex-1 bg-gray-100 py-2 rounded-lg font-bold text-sm">Edit Name</button>
+                        <button onclick="logout()" class="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-bold text-sm">Logout</button>
                     </div>
-                    
-                    <button onclick="logout()" class="mt-6 bg-red-50 text-red-600 px-6 py-2 rounded-lg font-bold text-sm w-full">Logout</button>
                 </div>
-                <div id="myPosts" class="mt-4"></div>
+                <div id="myPostsList"></div>
             </div>
         </div>
 
@@ -68,8 +70,8 @@
 
     <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md p-6 rounded-2xl">
-            <textarea id="pText" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-4" placeholder="কি ভাবছেন?"></textarea>
-            <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">পোস্ট করুন</button>
+            <textarea id="postInput" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-4 border" placeholder="আপনার মনে কি আছে?"></textarea>
+            <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Post Now</button>
         </div>
     </div>
 
@@ -87,58 +89,26 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- সময় হিসাব ফাংশন ---
-        function timeSince(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + " বছর আগে";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + " মাস আগে";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + " দিন আগে";
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + " ঘণ্টা আগে";
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + " মিনিট আগে";
-            return "এইমাত্র";
+        // --- সময় ফাংশন ---
+        function getTimeAgo(time) {
+            const diff = Math.floor((Date.now() - time) / 1000);
+            if (diff < 60) return "এইমাত্র";
+            if (diff < 3600) return Math.floor(diff / 60) + " মিনিট আগে";
+            if (diff < 86400) return Math.floor(diff / 3600) + " ঘণ্টা আগে";
+            return Math.floor(diff / 86400) + " দিন আগে";
+        }
+
+        // --- ব্যাজ লজিক ---
+        function getBadge(idx) {
+            const colors = ['badge-blue', 'badge-black', 'badge-yellow', 'badge-red', 'badge-green'];
+            return `<i class="fas fa-check-circle ${colors[idx % 5]}"></i>`;
         }
 
         // --- ফলো সিস্টেম ---
-        function followUser(targetName) {
-            if(targetName === user.name) return;
-            db.ref('users/' + targetName + '/followers').transaction(c => (c || 0) + 1);
-            alert(targetName + "-কে ফলো করা হয়েছে!");
-        }
-
-        // --- প্রোফাইল এডিট ---
-        function editUserName() {
-            const newName = prompt("নতুন নাম লিখুন:", user.name);
-            if(newName && newName !== user.name) {
-                db.ref('users/' + user.name).update({ name: newName }).then(() => {
-                    user.name = newName;
-                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
-                    location.reload();
-                });
-            }
-        }
-
-        function updateProfileImg(input) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const imgData = e.target.result;
-                db.ref('users/' + user.name).update({ pfp: imgData }).then(() => {
-                    user.pfp = imgData;
-                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
-                    location.reload();
-                });
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-
-        function showSection(id) {
-            ['feed','profile'].forEach(s => document.getElementById(s+'Section').classList.add('hidden'));
-            document.getElementById(id+'Section').classList.remove('hidden');
-            if(id === 'profile') loadMyProfile();
+        function follow(target) {
+            if(target === user.name) return;
+            db.ref('users/' + target + '/followers').transaction(c => (c || 0) + 1);
+            alert(target + "-কে ফলো করা হয়েছে!");
         }
 
         // --- নিউজ ফিড (নতুন পোস্ট আগে) ---
@@ -147,24 +117,24 @@
                 const allUsers = uSnap.val();
                 db.ref('posts').on('value', snap => {
                     const list = document.getElementById('feedList'); list.innerHTML = '';
-                    let posts = []; snap.forEach(c => posts.push({key: c.key, ...c.val()}));
+                    let posts = [];
+                    snap.forEach(c => posts.push({key: c.key, ...c.val()}));
                     
-                    // সর্টিং: নতুন পোস্ট আগে
-                    posts.sort((a, b) => b.time - a.time);
+                    posts.sort((a, b) => b.time - a.time); // সর্টিং
 
                     posts.forEach(p => {
                         const info = allUsers[p.uName] || {joinIndex: 0};
                         list.innerHTML += `
                         <div class="post-card">
-                            <div class="flex justify-between items-start mb-3">
+                            <div class="flex justify-between items-center mb-3">
                                 <div class="flex items-center gap-2">
                                     <img src="${p.uPfp}" class="w-10 h-10 rounded-full object-cover border">
                                     <div>
-                                        <h4 class="font-bold text-sm">${p.uName}</h4>
-                                        <p class="time-text">${timeSince(p.time)}</p>
+                                        <h4 class="font-bold text-sm">${p.uName} ${getBadge(info.joinIndex)}</h4>
+                                        <p class="time-text">${getTimeAgo(p.time)}</p>
                                     </div>
                                 </div>
-                                ${p.uName !== user.name ? `<button onclick="followUser('${p.uName}')" class="follow-btn">Follow +</button>` : ''}
+                                ${p.uName !== user.name ? `<button onclick="follow('${p.uName}')" class="follow-btn">Follow +</button>` : ''}
                             </div>
                             <p class="text-sm text-gray-800">${p.content}</p>
                         </div>`;
@@ -173,22 +143,56 @@
             });
         }
 
-        function submitPost() {
-            const txt = document.getElementById('pText').value.trim();
-            if(!txt) return;
-            db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: txt, time: Date.now() }).then(() => {
-                document.getElementById('postModal').classList.add('hidden');
-                document.getElementById('pText').value = '';
+        // --- প্রোফাইল আপডেট ---
+        function updateProfilePic(input) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = e.target.result;
+                db.ref('users/' + user.name).update({ pfp: img }).then(() => {
+                    user.pfp = img;
+                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
+                    location.reload();
+                });
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function editName() {
+            const n = prompt("আপনার নতুন নাম লিখুন:", user.name);
+            if(n && n !== user.name) {
+                db.ref('users/' + user.name).update({ name: n }).then(() => {
+                    user.name = n;
+                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
+                    location.reload();
+                });
+            }
+        }
+
+        function showSection(id) {
+            ['feed', 'profile'].forEach(s => {
+                document.getElementById(s + 'Section').classList.add('hidden');
+                document.getElementById('ic-' + s).classList.remove('active-nav');
+            });
+            document.getElementById(id + 'Section').classList.remove('hidden');
+            document.getElementById('ic-' + id).classList.add('active-nav');
+            if(id === 'profile') loadProfileData();
+        }
+
+        function loadProfileData() {
+            db.ref('users/' + user.name).once('value', snap => {
+                const d = snap.val();
+                document.getElementById('pNameDisplay').innerHTML = d.name + " " + getBadge(d.joinIndex);
+                document.getElementById('profilePfp').src = d.pfp;
+                document.getElementById('followerDisplay').innerText = (d.followers || 0) + " Followers";
             });
         }
 
-        function loadMyProfile() {
-            db.ref('users/' + user.name).once('value', snap => {
-                const d = snap.val();
-                document.getElementById('pNameDisplay').innerText = d.name;
-                document.getElementById('profilePfp').src = d.pfp;
-                document.getElementById('fCountDisplay').innerText = (d.followers || 0) + " Followers";
-            });
+        function submitPost() {
+            const txt = document.getElementById('postInput').value.trim();
+            if(!txt) return;
+            db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: txt, time: Date.now() });
+            document.getElementById('postModal').classList.add('hidden');
+            document.getElementById('postInput').value = '';
         }
 
         function logout() { localStorage.clear(); location.reload(); }
@@ -198,11 +202,11 @@
             loadFeed();
             showSection('feed');
         } else {
-            // সিম্পল অটো-লগইন ফর ডেমো
-            let name = prompt("ইউজারনাম দিন:");
-            if(name) {
-                let data = {name: name, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png"};
-                localStorage.setItem('freechatbook_user', JSON.stringify(data));
+            // গেস্ট লগইন সিমুলেশন
+            let n = prompt("আপনার ইউজারনাম দিন:");
+            if(n) {
+                let d = {name: n, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", joinIndex: 0};
+                localStorage.setItem('freechatbook_user', JSON.stringify(d));
                 location.reload();
             }
         }
