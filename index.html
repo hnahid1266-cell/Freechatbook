@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freechatbook - Digital World</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .hidden { display: none !important; }
+        .fb-shadow { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+        .story-circle { width: 65px; height: 65px; border: 3px solid #1877f2; padding: 2px; border-radius: 50%; object-fit: cover; cursor: pointer; }
+        .react-btn:hover .react-panel { display: flex; }
+        .react-panel { display: none; position: absolute; bottom: 100%; left: 0; background: white; padding: 5px; border-radius: 30px; box-shadow: 0 2px 15px rgba(0,0,0,0.2); gap: 10px; z-index: 100; animation: bounce 0.3s ease; }
+        @keyframes bounce { 0% { transform: translateY(10px); } 100% { transform: translateY(0); } }
+        .chat-window { position: fixed; bottom: 0; right: 20px; width: 300px; height: 400px; background: white; border-radius: 10px 10px 0 0; z-index: 2000; display: flex; flex-direction: column; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div id="authPage" class="fixed inset-0 bg-[#f0f2f5] z-[9999] flex flex-col items-center justify-center p-4">
+        <h1 class="text-[#1877f2] text-5xl font-black mb-8 italic">freechatbook</h1>
+        <div class="bg-white p-6 rounded-lg fb-shadow w-full max-w-sm text-center">
+            
+            <div id="loginForm">
+                <input type="text" id="loginUser" placeholder="ইউজার নাম" class="w-full border border-gray-300 p-3 rounded-md mb-3 outline-none focus:border-[#1877f2]">
+                <input type="password" id="loginPass" placeholder="পাসওয়ার্ড" class="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#1877f2]">
+                <button onclick="login()" class="w-full bg-[#1877f2] text-white py-2 rounded-md font-bold text-xl hover:bg-blue-700">Log In</button>
+                <p onclick="forgotPass()" class="text-[#1877f2] text-sm mt-4 cursor-pointer hover:underline">পাসওয়ার্ড ভুলে গেছেন?</p>
+                <hr class="my-6">
+                <button onclick="toggleAuth()" class="bg-[#42b72a] text-white px-4 py-2 rounded-md font-bold hover:bg-green-600">নতুন একাউন্ট খুলুন</button>
+            </div>
+
+            <div id="signupForm" class="hidden">
+                <div class="mb-4 relative inline-block">
+                    <img id="regPreview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-20 h-20 rounded-full border-2 border-blue-500 object-cover">
+                    <label class="absolute bottom-0 right-0 bg-gray-100 p-1 rounded-full cursor-pointer shadow border"><i class="fas fa-camera text-xs"></i><input type="file" class="hidden" accept="image/*" onchange="previewRegImg(this)"></label>
+                </div>
+                <input type="text" id="regUser" placeholder="ইউনিক ইউজার নাম" class="w-full border p-2 rounded mb-2 outline-none">
+                <input type="text" id="regContact" placeholder="মোবাইল বা ইমেইল" class="w-full border p-2 rounded mb-2 outline-none">
+                <input type="text" id="regCity" placeholder="আপনার শহর" class="w-full border p-2 rounded mb-2 outline-none">
+                <input type="password" id="regPass" placeholder="নতুন পাসওয়ার্ড" class="w-full border p-2 rounded mb-4 outline-none">
+                <button onclick="signup()" class="w-full bg-[#42b72a] text-white py-2 rounded font-bold">Sign Up</button>
+                <p onclick="toggleAuth()" class="text-[#1877f2] mt-4 cursor-pointer font-bold">লগইন করুন</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <nav class="bg-white sticky top-0 border-b p-2 shadow-sm z-50 flex justify-between items-center px-4">
+            <h1 class="text-[#1877f2] text-2xl font-black italic">freechatbook</h1>
+            <div class="flex gap-4 items-center">
+                <i onclick="logout()" class="fas fa-sign-out-alt text-gray-500 text-xl cursor-pointer" title="লগআউট"></i>
+                <img id="navPfp" src="" class="w-9 h-9 rounded-full border object-cover border-blue-500">
+            </div>
+        </nav>
+
+        <div class="max-w-[550px] mx-auto p-2 pb-20">
+            <div class="flex gap-3 overflow-x-auto no-scrollbar py-3 mb-2 bg-white p-2 rounded-lg fb-shadow">
+                <div onclick="addStory()" class="flex flex-col items-center min-w-[70px]">
+                    <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center border-2 border-dashed border-blue-500 text-blue-500 cursor-pointer"><i class="fas fa-plus"></i></div>
+                    <span class="text-[10px] font-bold mt-1">Story</span>
+                </div>
+                <div id="storyList" class="flex gap-3"></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg fb-shadow mb-4">
+                <div class="flex gap-2 mb-3">
+                    <img id="inputPfp" src="" class="w-10 h-10 rounded-full object-cover">
+                    <textarea id="postText" class="bg-gray-100 rounded-xl flex-1 p-3 outline-none text-sm resize-none" placeholder="আপনার মনে কি আছে?"></textarea>
+                </div>
+                <div class="border-t pt-2 flex justify-around">
+                    <label class="cursor-pointer text-gray-500 font-bold text-xs"><i class="fas fa-image text-green-500"></i> ফটো <input type="file" id="postFile" class="hidden" accept="image/*" onchange="previewPostImg(this)"></label>
+                    <button onclick="uploadPost()" class="bg-[#1877f2] text-white px-6 py-1 rounded-md font-bold text-sm">পোস্ট করুন</button>
+                </div>
+                <img id="postPreview" class="hidden w-full mt-3 rounded-lg border max-h-60 object-cover">
+            </div>
+
+            <div id="feed"></div>
+        </div>
+    </div>
+
+    <div id="chatWin" class="chat-window hidden">
+        <div class="bg-[#1877f2] p-3 text-white font-bold flex justify-between items-center rounded-t-lg">
+            <span id="chatTitle" class="text-sm">Name</span>
+            <button onclick="document.getElementById('chatWin').classList.add('hidden')">✕</button>
+        </div>
+        <div id="msgBox" class="flex-1 overflow-y-auto p-3 bg-gray-50 flex flex-col"></div>
+        <div class="p-2 border-t flex gap-2">
+            <input id="msgInput" type="text" class="flex-1 bg-gray-100 rounded-full px-4 text-xs outline-none" placeholder="মেসেজ লিখুন...">
+            <button onclick="sendMsg()" class="text-blue-600 text-xl"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script>
+        // আপনার অরিজিনাল Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
+            authDomain: "freechatbook-42f04.firebaseapp.com",
+            databaseURL: "https://freechatbook-42f04-default-rtdb.firebaseio.com",
+            projectId: "freechatbook-42f04",
+            storageBucket: "freechatbook-42f04.firebasestorage.app",
+            messagingSenderId: "784680329144",
+            appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let loggedUser = JSON.parse(localStorage.getItem('freechatbook_user'));
+
+        function toggleAuth() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('signupForm').classList.toggle('hidden');
+        }
+
+        // --- রেজিস্ট্রেশন ---
+        let regPfpData = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        function previewRegImg(input) {
+            const reader = new FileReader();
+            reader.onload = e => { regPfpData = e.target.result; document.getElementById('regPreview').src = e.target.result; }
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function signup() {
+            const user = document.getElementById('regUser').value.trim();
+            const contact = document.getElementById('regContact').value.trim();
+            const city = document.getElementById('regCity').value.trim();
+            const pass = document.getElementById('regPass').value.trim();
+
+            if(!user || !pass) return alert("তথ্য দিন!");
+
+            db.ref('users/' + user).once('value', snap => {
+                if(snap.exists()) return alert("ইউজার নামটি ইতিমধ্যে ব্যবহৃত!");
+                db.ref('users/' + user).set({ name: user, pass, contact, city, pfp: regPfpData }).then(() => {
+                    alert("রেজিস্ট্রেশন সফল!"); toggleAuth();
+                });
+            });
+        }
+
+        // --- লগইন (Fixed) ---
+        function login() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            db.ref('users/' + user).once('value', snap => {
+                if(snap.exists() && snap.val().pass === pass) {
+                    loggedUser = snap.val();
+                    localStorage.setItem('freechatbook_user', JSON.stringify(loggedUser));
+                    checkUserStatus();
+                } else alert("ভুল ইউজার নাম অথবা পাসওয়ার্ড!");
+            });
+        }
+
+        function checkUserStatus() {
+            if(loggedUser) {
+                document.getElementById('authPage').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('navPfp').src = loggedUser.pfp;
+                document.getElementById('inputPfp').src = loggedUser.pfp;
+                loadFeed();
+                loadStories();
+            }
+        }
+        window.onload = checkUserStatus;
+
+        // --- পোস্ট সিস্টেম ---
+        let postImgData = "";
+        function previewPostImg(input) {
+            const reader = new FileReader();
+            reader.onload = e => { postImgData = e.target.result; document.getElementById('postPreview').src = e.target.result; document.getElementById('postPreview').classList.remove('hidden'); }
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function uploadPost() {
+            const text = document.getElementById('postText').value;
+            if(!text && !postImgData) return;
+
+            db.ref('posts').push({ uName: loggedUser.name, uPfp: loggedUser.pfp, uCity: loggedUser.city, text, img: postImgData, reacts: 0 });
+            document.getElementById('postText').value = "";
+            document.getElementById('postPreview').classList.add('hidden');
+            postImgData = "";
+        }
+
+        function loadFeed() {
+            db.ref('posts').on('value', snap => {
+                const feed = document.getElementById('feed'); feed.innerHTML = '';
+                snap.forEach(c => {
+                    const p = c.val();
+                    feed.innerHTML = `
+                        <div class="bg-white rounded-lg fb-shadow mb-4 p-4">
+                            <div class="flex items-center justify-between mb-3 text-left">
+                                <div class="flex items-center gap-3">
+                                    <img src="${p.uPfp}" class="w-10 h-10 rounded-full border object-cover">
+                                    <div><h4 class="font-bold text-sm">${p.uName}</h4><p class="text-[10px] text-gray-400">📍 ${p.uCity || 'Global'}</p></div>
+                                </div>
+                                <button onclick="startChat('${p.uName}')" class="text-[#1877f2] font-bold text-xs"><i class="fas fa-comment"></i> Inbox</button>
+                            </div>
+                            <p class="text-sm text-gray-800 mb-3 text-left">${p.text}</p>
+                            ${p.img ? `<img src="${p.img}" class="w-full rounded-lg border mb-3">` : ''}
+                            <div class="flex justify-between items-center text-gray-500 font-bold text-sm border-t pt-2 relative">
+                                <div class="react-btn flex-1 py-1 text-center cursor-pointer relative"><i class="far fa-thumbs-up"></i> Like (${p.reacts || 0})
+                                    <div class="react-panel"><span onclick="addReact('${c.key}')">👍</span><span>❤️</span><span>😆</span></div>
+                                </div>
+                                <div class="flex-1 py-1 text-center cursor-pointer"><i class="far fa-comment"></i> Comment</div>
+                            </div>
+                        </div>` + feed.innerHTML;
+                });
+            });
+        }
+
+        function addReact(id) { db.ref('posts/' + id + '/reacts').transaction(c => (c || 0) + 1); }
+
+        // --- স্টোরি ---
+        function addStory() {
+            const input = document.createElement('input'); input.type = 'file';
+            input.onchange = e => {
+                const reader = new FileReader();
+                reader.onload = ev => { db.ref('stories').push({ uName: loggedUser.name, img: ev.target.result }); };
+                reader.readAsDataURL(e.target.files[0]);
+            };
+            input.click();
+        }
+
+        function loadStories() {
+            db.ref('stories').on('value', snap => {
+                const sList = document.getElementById('storyList'); sList.innerHTML = '';
+                snap.forEach(c => { sList.innerHTML += `<img src="${c.val().img}" class="story-circle shadow-sm">`; });
+            });
+        }
+
+        // --- চ্যাট ---
+        let activeChatId = "";
+        function startChat(name) {
+            if(name === loggedUser.name) return;
+            activeChatId = [loggedUser.name, name].sort().join("_");
+            document.getElementById('chatTitle').innerText = name;
+            document.getElementById('chatWin').classList.remove('hidden');
+            listenChat();
+        }
+
+        function sendMsg() {
+            const t = document.getElementById('msgInput').value; if(!t) return;
+            db.ref('messages/' + activeChatId).push({ sender: loggedUser.name, text: t });
+            document.getElementById('msgInput').value = "";
+        }
+
+        function listenChat() {
+            db.ref('messages/' + activeChatId).on('value', snap => {
+                const box = document.getElementById('msgBox'); box.innerHTML = '';
+                snap.forEach(m => {
+                    const isMe = m.val().sender === loggedUser.name;
+                    box.innerHTML += `<div class="p-2 rounded-xl text-xs mb-2 max-w-[80%] text-left ${isMe ? 'bg-[#1877f2] text-white self-end' : 'bg-gray-200 self-start'}">${m.val().text}</div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+        }
+
+        function logout() { localStorage.removeItem('freechatbook_user'); location.reload(); }
+        function forgotPass() { const u = prompt("ইউজার নাম দিন:"); if(u) db.ref('users/' + u).once('value', s => { if(s.exists()) alert("পাসওয়ার্ড: " + s.val().pass); else alert("নাই!"); }); }
+    </script>
+</body>
+</html>
