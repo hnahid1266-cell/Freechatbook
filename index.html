@@ -3,111 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - All in One</title>
+    <title>Freechatbook - Final Update</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --fb-blue: #0866FF; }
-        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
         .hidden { display: none !important; }
-        .post-card { background: white; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .ludo-board { width: 280px; height: 280px; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); background: #fff; border: 2px solid #333; margin: 20px auto; }
-        .red { background: #ff4d4d; } .green { background: #2ecc71; } .blue { background: #3498db; } .yellow { background: #f1c40f; }
+        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); overflow: hidden; }
+        .badge-black { color: #000; } .badge-blue { color: #0866FF; } .badge-green { color: #28a745; }
+        .ludo-preview { width: 200px; height: 200px; margin: 10px auto; border: 2px solid #333; display: grid; grid-template-columns: repeat(2, 1fr); }
     </style>
 </head>
 <body>
 
-    <nav class="sticky top-0 bg-white border-b z-[500] p-3 flex items-center justify-between px-6 shadow-sm">
-        <h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
-        <div class="flex gap-4 items-center">
-            <div onclick="openSearch()" class="bg-gray-100 p-2 px-4 rounded-full flex items-center gap-2 cursor-pointer">
-                <i class="fas fa-search text-gray-500"></i>
-                <span class="text-gray-400 text-sm">Search...</span>
-            </div>
-            <img id="navPfp" onclick="viewProfile(user.name)" src="" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover cursor-pointer">
+    <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6">
+        <h1 class="text-[#0866FF] text-4xl font-black italic mb-6">freechatbook</h1>
+        <div id="loginForm" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl">
+            <input type="text" id="loginUser" placeholder="Username" class="w-full border p-3 rounded-xl mb-3 outline-none">
+            <input type="password" id="loginPass" placeholder="Password" class="w-full border p-3 rounded-xl mb-4 outline-none">
+            <button onclick="login()" class="w-full bg-[#0866FF] text-white py-3 rounded-xl font-bold">Login</button>
+            <p onclick="toggleAuth()" class="text-center mt-4 text-blue-600 cursor-pointer">Create Account</p>
         </div>
-    </nav>
-
-    <div id="searchModal" class="fixed inset-0 bg-white z-[1000] hidden p-4">
-        <div class="flex items-center gap-3 mb-6">
-            <i onclick="closeSearch()" class="fas fa-arrow-left text-xl cursor-pointer"></i>
-            <input type="text" id="searchInput" oninput="runSearch()" placeholder="Search names..." class="w-full bg-gray-100 p-3 rounded-xl outline-none border">
-        </div>
-        <div id="searchResults" class="space-y-4"></div>
-    </div>
-
-    <div id="mainApp" class="max-w-xl mx-auto p-4 pb-24">
-        <div id="feedSection">
-            <div id="newsFeed"></div>
-        </div>
-        
-        <div id="inboxSection" class="hidden">
-            <h2 class="font-bold text-lg mb-4">Messages</h2>
-            <div id="chatList" class="space-y-3"></div>
-        </div>
-
-        <div id="gamesSection" class="hidden text-center bg-white p-6 rounded-2xl shadow-sm">
-            <h2 class="text-2xl font-bold text-blue-600">Ludo King</h2>
-            <p class="text-xs text-gray-400 mb-4">Invite friends to play together</p>
-            <div class="ludo-board shadow-lg">
-                <div class="red" style="grid-area: 1/1/7/7; border:1px solid #000;"></div>
-                <div class="green" style="grid-area: 1/10/7/16; border:1px solid #000;"></div>
-                <div class="blue" style="grid-area: 10/1/16/7; border:1px solid #000;"></div>
-                <div class="yellow" style="grid-area: 10/10/16/16; border:1px solid #000;"></div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <button onclick="inviteLudo()" class="bg-blue-600 text-white p-3 rounded-xl font-bold text-sm">Invite Friend</button>
-                <button onclick="alert('Searching Online Players...')" class="bg-green-600 text-white p-3 rounded-xl font-bold text-sm">Online Play</button>
-            </div>
-        </div>
-
-        <div id="menuSection" class="hidden">
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <textarea id="postContent" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-3" placeholder="What's on your mind?"></textarea>
-                <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Post Now</button>
-            </div>
-        </div>
-
-        <div id="profileSection" class="hidden bg-white p-6 rounded-2xl shadow-sm text-center">
-            <img id="profilePfp" src="" class="w-32 h-32 rounded-full mx-auto border-4 border-blue-100 object-cover">
-            <h2 id="profileName" class="text-2xl font-bold mt-3">Name <i id="verifyBadge" class="fas fa-check-circle"></i></h2>
-            <p id="followerText" class="text-blue-600 font-bold text-sm">0 Followers</p>
-            <div id="profileActions" class="flex justify-center gap-2 mt-6"></div>
-            <div id="aboutBox" class="text-left mt-8 border-t pt-4 text-sm space-y-2"></div>
+        <div id="signupForm" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl hidden">
+            <input type="text" id="regUser" placeholder="Username" class="w-full border p-3 rounded-xl mb-2">
+            <input type="password" id="regPass" placeholder="Password" class="w-full border p-3 rounded-xl mb-4">
+            <button onclick="signup()" class="w-full bg-[#42b72a] text-white py-3 rounded-xl font-bold">Sign Up</button>
+            <p onclick="toggleAuth()" class="text-center mt-4 text-blue-600 cursor-pointer">Back to Login</p>
         </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-[600]">
-        <i onclick="showSection('feed')" class="fas fa-home text-xl text-blue-600 cursor-pointer"></i>
-        <i onclick="showSection('inbox')" class="fas fa-comment-dots text-xl text-gray-400 cursor-pointer"></i>
-        <i onclick="showSection('games')" class="fas fa-gamepad text-xl text-gray-400 cursor-pointer"></i>
-        <i onclick="showSection('menu')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
-        <i onclick="viewProfile(user.name)" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer"></i>
+    <div id="mainApp" class="hidden pb-24">
+        <nav class="bg-white sticky top-0 border-b p-3 flex justify-between items-center px-6 shadow-sm z-50">
+            <h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
+            <div onclick="openSearch()" class="bg-gray-100 p-2 rounded-full px-4 text-gray-400 text-sm cursor-pointer"><i class="fas fa-search mr-2"></i>Search</div>
+        </nav>
+
+        <div class="max-w-xl mx-auto p-3">
+            <div id="feedSection">
+                <div id="feed"></div>
+            </div>
+
+            <div id="inboxSection" class="hidden">
+                <h2 class="font-bold text-lg mb-4">ইনবক্স</h2>
+                <div id="chatList" class="space-y-3"></div>
+            </div>
+
+            <div id="gamesSection" class="hidden text-center bg-white p-6 rounded-2xl shadow-sm">
+                <h2 class="text-xl font-bold text-blue-600 mb-2">Ludo King Pro</h2>
+                <div class="ludo-preview">
+                    <div class="bg-red-500"></div><div class="bg-green-500"></div>
+                    <div class="bg-blue-500"></div><div class="bg-yellow-500"></div>
+                </div>
+                <button onclick="alert('Invitation Sent to Friends!')" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">Invite Friend</button>
+            </div>
+
+            <div id="menuSection" class="hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 class="font-bold mb-4">নতুন পোস্ট করুন</h3>
+                    <textarea id="postContent" class="w-full bg-gray-50 p-4 rounded-xl outline-none mb-3" placeholder="আপনার মনে কি আছে?"></textarea>
+                    <input type="file" id="postImg" class="mb-3 block w-full text-xs">
+                    <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Post Now</button>
+                </div>
+            </div>
+
+            <div id="profileSection" class="hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm text-center">
+                    <img id="profilePfp" onclick="openImg(this.src)" src="" class="w-32 h-32 rounded-full mx-auto border-4 border-blue-100 object-cover cursor-pointer">
+                    <h2 class="text-2xl font-bold mt-3 flex justify-center items-center gap-1">
+                        <span id="profileName">Name</span>
+                        <i id="vBadge" class="fas fa-check-circle"></i>
+                    </h2>
+                    <p id="followCount" class="text-blue-600 font-bold">0 Followers</p>
+                    <p class="text-[10px] text-gray-400">১০০০ ফলোয়ার হলে সবুজ টিক বেডজ পাবেন</p>
+                    
+                    <div class="grid grid-cols-2 gap-2 mt-6">
+                        <button class="bg-blue-50 text-blue-600 py-2 rounded-lg font-bold text-sm">ফ্রেন্ড রিকোয়েস্ট</button>
+                        <button onclick="logout()" class="bg-red-50 text-red-600 py-2 rounded-lg font-bold text-sm">লগআউট</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
+            <i onclick="showSection('feed')" class="fas fa-home text-xl text-blue-600 cursor-pointer"></i>
+            <i onclick="showSection('inbox')" class="fas fa-comment-dots text-xl text-gray-400 cursor-pointer"></i>
+            <i onclick="showSection('games')" class="fas fa-gamepad text-xl text-gray-400 cursor-pointer"></i>
+            <i onclick="showSection('menu')" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
+            <i onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer"></i>
+        </div>
     </div>
 
-    <div id="chatWin" class="fixed inset-0 bg-white z-[2000] hidden flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center shadow-sm">
+    <div id="chatWin" class="fixed inset-0 bg-white z-[9000] hidden flex flex-col">
+        <div class="p-4 border-b flex justify-between items-center bg-blue-600 text-white shadow-md">
             <div class="flex items-center gap-2">
                 <i onclick="document.getElementById('chatWin').classList.add('hidden')" class="fas fa-arrow-left cursor-pointer"></i>
-                <span id="chatTitle" class="font-bold text-sm">Chat</span>
+                <span id="chatTitle">Chat</span>
             </div>
-            <div class="flex gap-4 text-blue-600">
-                <i onclick="alert('Audio Calling...')" class="fas fa-phone-alt"></i>
-                <i onclick="alert('Video Calling...')" class="fas fa-video"></i>
-                <i onclick="blockUser()" class="fas fa-user-slash text-red-500"></i>
+            <div class="flex gap-4">
+                <i class="fas fa-phone-alt"></i><i class="fas fa-video"></i><i class="fas fa-user-slash"></i>
             </div>
         </div>
-        <div id="msgBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-gray-50"></div>
+        <div id="msgBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
         <div class="p-3 border-t flex gap-2">
-            <input id="msgInput" type="text" class="flex-1 bg-gray-100 rounded-full px-4 outline-none text-sm" placeholder="Aa">
+            <input id="msgInput" type="text" class="flex-1 bg-gray-100 rounded-full px-4 outline-none" placeholder="Message...">
             <button onclick="sendMsg()" class="text-blue-600"><i class="fas fa-paper-plane text-xl"></i></button>
         </div>
     </div>
 
     <script>
-        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
@@ -121,96 +126,111 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // অশ্লীল ফিল্টার
-        const badWords = ["nude", "sex", "porno", "naked"];
-        function isSafe(text) { return !badWords.some(w => text.toLowerCase().includes(w)); }
-
-        // সেকশন কন্ট্রোল
-        function showSection(id) {
-            ['feed', 'inbox', 'games', 'menu', 'profile'].forEach(s => document.getElementById(s + 'Section').classList.add('hidden'));
-            document.getElementById(id + 'Section').classList.remove('hidden');
+        function toggleAuth() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('signupForm').classList.toggle('hidden');
         }
 
-        // সার্চ ফাংশন
-        function openSearch() { document.getElementById('searchModal').classList.remove('hidden'); }
-        function closeSearch() { document.getElementById('searchModal').classList.add('hidden'); }
-        function runSearch() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const res = document.getElementById('searchResults'); res.innerHTML = '';
-            if(!q) return;
-            db.ref('users').orderByKey().startAt(q).endAt(q+"\uf8ff").once('value', snap => {
-                snap.forEach(u => {
-                    const d = u.val();
-                    res.innerHTML += `<div onclick="viewProfile('${d.name}'); closeSearch()" class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
-                        <img src="${d.pfp}" class="w-10 h-10 rounded-full object-cover"><span class="font-bold text-sm">${d.name}</span></div>`;
+        // --- রেজিস্ট্রেশন ও অটো মেসেজ ---
+        function signup() {
+            const u = document.getElementById('regUser').value.trim();
+            const p = document.getElementById('regPass').value.trim();
+            if(!u || !p) return;
+            db.ref('users/' + u).set({
+                name: u, pass: p, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                postCount: 0, followers: 0
+            }).then(() => {
+                // অটোমেটিক ইনকাম মেসেজ
+                db.ref('messages/' + u + '_admin').push({
+                    sender: "Freechatbook Admin",
+                    text: "৫০০০ জন ব্যাবহারকারী যুক্ত হলে সাইটে এডস দেখার মাধ্যমে আপনি টাকা আয় করতে পারবেন। ধন্যবাদ আমাদের সাথে যুক্ত হওয়ার জন্য।"
                 });
+                alert("Account Created! Login Now.");
+                toggleAuth();
             });
         }
 
-        // প্রোফাইল ভিজিট (ফলো ও ব্যাজ সহ)
-        function viewProfile(target) {
-            showSection('profile');
-            db.ref('users/' + target).on('value', snap => {
-                const d = snap.val();
-                document.getElementById('profileName').innerText = d.name;
-                document.getElementById('profilePfp').src = d.pfp;
-                document.getElementById('followerText').innerText = (d.followers || 0) + " Followers";
-                const badge = document.getElementById('verifyBadge');
-                if(d.followers >= 1000) badge.className = "fas fa-check-circle text-green-500";
-                else if(d.postCount >= 50) badge.className = "fas fa-check-circle text-blue-500";
-                else badge.className = "fas fa-check-circle text-black";
-
-                const actions = document.getElementById('profileActions');
-                if(target !== user.name) {
-                    actions.innerHTML = `<button onclick="follow('${target}')" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">Follow</button>
-                                         <button onclick="openChat('${target}')" class="bg-gray-200 px-6 py-2 rounded-lg font-bold">Message</button>`;
-                } else {
-                    actions.innerHTML = `<button onclick="localStorage.clear(); location.reload()" class="text-red-500 font-bold">Logout</button>`;
-                }
+        function login() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            db.ref('users/' + u).once('value', snap => {
+                if(snap.exists() && snap.val().pass === p) {
+                    user = snap.val();
+                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
+                    location.reload();
+                } else alert("Wrong Login!");
             });
         }
 
-        function follow(target) { db.ref('users/' + target + '/followers').transaction(c => (c || 0) + 1); alert("Following!"); }
-
-        // গেমস ইনভাইট
-        function inviteLudo() {
-            const f = prompt("Enter Friend's Username:");
-            if(f) {
-                db.ref('messages/' + [user.name, f].sort().join("_")).push({ sender: "System", text: `${user.name} invited you to play Ludo! Room: 1020` });
-                alert("Invite Sent!");
-            }
+        if(user) {
+            document.getElementById('authPage').remove();
+            document.getElementById('mainApp').classList.remove('hidden');
+            loadFeed();
+            loadInbox();
         }
 
-        // পোস্টিং ও ফিড
+        // --- পোস্টিং (ছবিসহ) ---
         function submitPost() {
-            const t = document.getElementById('postContent').value;
-            if(!isSafe(t)) return alert("Obscene content blocked!");
-            db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: t, time: Date.now() });
-            db.ref('users/' + user.name + '/postCount').transaction(c => (c || 0) + 1);
-            showSection('feed');
+            const text = document.getElementById('postContent').value;
+            const file = document.getElementById('postImg').files[0];
+            if(!text && !file) return;
+
+            let imgData = "";
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    imgData = e.target.result;
+                    db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: text, image: imgData, likes: 0, time: Date.now() });
+                    db.ref('users/'+user.name+'/postCount').transaction(c => (c || 0) + 1);
+                    showSection('feed');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: text, image: "", likes: 0, time: Date.now() });
+                db.ref('users/'+user.name+'/postCount').transaction(c => (c || 0) + 1);
+                showSection('feed');
+            }
         }
 
         function loadFeed() {
             db.ref('posts').on('value', snap => {
-                const feed = document.getElementById('newsFeed'); feed.innerHTML = '';
+                const feed = document.getElementById('feed'); feed.innerHTML = '';
                 snap.forEach(c => {
                     const p = c.val();
-                    feed.innerHTML = `<div class="post-card p-4">
-                        <div class="flex items-center gap-3 mb-2">
-                            <img src="${p.uPfp}" onclick="viewProfile('${p.uName}')" class="w-9 h-9 rounded-full cursor-pointer">
-                            <h4 class="font-bold text-sm cursor-pointer" onclick="viewProfile('${p.uName}')">${p.uName}</h4>
-                        </div>
-                        <p class="text-sm">${p.content}</p>
-                    </div>` + feed.innerHTML;
+                    feed.innerHTML = `
+                        <div class="post-card">
+                            <div class="p-3 flex items-center gap-2">
+                                <img src="${p.uPfp}" class="w-9 h-9 rounded-full">
+                                <h4 class="font-bold text-sm">${p.uName}</h4>
+                            </div>
+                            <p class="px-3 text-sm mb-2">${p.content}</p>
+                            ${p.image ? `<img src="${p.image}" class="w-full max-h-80 object-cover">` : ''}
+                            <div class="p-3 border-t flex gap-4 text-gray-500 font-bold text-xs">
+                                <span onclick="alert('Liked!')" class="cursor-pointer"><i class="far fa-thumbs-up"></i> Like</span>
+                                <span onclick="openChat('${p.uName}')" class="cursor-pointer"><i class="far fa-comment"></i> Message</span>
+                            </div>
+                        </div>` + feed.innerHTML;
                 });
             });
         }
 
-        // চ্যাট ফাংশন
+        // --- ইনবক্স ও চ্যাট ---
+        function loadInbox() {
+            db.ref('messages').on('value', snap => {
+                const list = document.getElementById('chatList'); list.innerHTML = '';
+                snap.forEach(chat => {
+                    if(chat.key.includes(user.name)) {
+                        const other = chat.key.replace(user.name, "").replace("_", "");
+                        list.innerHTML += `<div onclick="openChat('${other}')" class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 font-bold">${other} <p class="text-[10px] font-normal">মেসেজ দেখতে ক্লিক করুন</p></div>`;
+                    }
+                });
+            });
+        }
+
         let activeChat = "";
-        function openChat(target) {
-            activeChat = [user.name, target].sort().join("_");
-            document.getElementById('chatTitle').innerText = target;
+        function openChat(name) {
+            activeChat = [user.name, name].sort().join("_");
+            document.getElementById('chatTitle').innerText = name;
             document.getElementById('chatWin').classList.remove('hidden');
             db.ref('messages/' + activeChat).on('value', snap => {
                 const box = document.getElementById('msgBox'); box.innerHTML = '';
@@ -223,18 +243,29 @@
         }
 
         function sendMsg() {
-            const t = document.getElementById('msgInput').value;
-            if(!t || !isSafe(t)) return;
+            const t = document.getElementById('msgInput').value; if(!t) return;
             db.ref('messages/' + activeChat).push({ sender: user.name, text: t });
             document.getElementById('msgInput').value = '';
         }
 
-        if(user) {
-            document.getElementById('navPfp').src = user.pfp;
-            loadFeed();
-        } else {
-            // লগইন পেজ রিডাইরেক্ট কোড (আগের মতো)
+        // --- সেকশন ও প্রোফাইল ---
+        function showSection(id) {
+            ['feed', 'inbox', 'games', 'menu', 'profile'].forEach(s => document.getElementById(s + 'Section').classList.add('hidden'));
+            document.getElementById(id + 'Section').classList.remove('hidden');
+            if(id === 'profile') updateUI();
         }
+
+        function updateUI() {
+            document.getElementById('profileName').innerText = user.name;
+            document.getElementById('profilePfp').src = user.pfp;
+            document.getElementById('followCount').innerText = (user.followers || 0) + " Followers";
+            const b = document.getElementById('vBadge');
+            if(user.followers >= 1000) b.className = "fas fa-check-circle badge-green";
+            else if(user.postCount >= 50) b.className = "fas fa-check-circle badge-blue";
+            else b.className = "fas fa-check-circle badge-black";
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>
