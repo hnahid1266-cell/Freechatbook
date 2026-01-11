@@ -137,7 +137,7 @@
         }
 
         // ফিড ও ফলো বাটন
-        function loadFeed() {
+        function loadfeed() {
             db.ref('posts').on('value', snap => {
                 const list = document.getElementById('feedList'); list.innerHTML = '';
                 let posts = []; snap.forEach(c => posts.push({key: c.key, ...c.val()}));
