@@ -88,109 +88,176 @@
         }
 
         // অন্যের প্রোফাইল দেখা
-        function viewUserProfile(name) {
-            db.ref('users/' + name).once('value', snap => {
-                const d = snap.val();
-                document.getElementById('pNameDisplay').innerText = d.name;
-                document.getElementById('profilePfp').src = d.pfp;
-                document.getElementById('fCountDisplay').innerText = (d.followers || 0) + " Followers";
-                
-                let actions = document.getElementById('profileActions');
-                actions.innerHTML = name !== user.name ? 
-                    `<button onclick="follow('${name}')" class="bg-blue-600 text-white flex-1 py-2 rounded-lg font-bold">ফলো করুন</button>` : 
-                    `<button onclick="logout()" class="bg-red-50 text-red-600 flex-1 py-2 rounded-lg font-bold">Logout</button>`;
-                
-                showSection('profile');
-            });
-        }
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
+  authDomain: "freechatbook-42f04.firebaseapp.com",
+  databaseURL: "https://freechatbook-42f04-default-rtdb.firebaseio.com",
+  projectId: "freechatbook-42f04",
+  storageBucket: "freechatbook-42f04.firebasestorage.app",
+  messagingSenderId: "784680329144",
+  appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-        // রিলস আপলোড ও লোড
-        function uploadReel(input) {
-            const file = input.files[0];
-            const reader = new FileReader();
-            reader.onload = e => {
-                db.ref('reels').push({ uName: user.name, uPfp: user.pfp, video: e.target.result, likes: 0, time: Date.now() });
-                alert("রিলস আপলোড হয়েছে!");
-            };
-            reader.readAsDataURL(file);
-        }
+let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        function loadReels() {
-            db.ref('reels').on('value', snap => {
-                const list = document.getElementById('reelList'); list.innerHTML = '';
-                snap.forEach(c => {
-                    const r = c.val();
-                    list.innerHTML += `
-                        <div class="relative reel-box">
-                            <video class="reel-video" src="${r.video}" loop onclick="this.paused?this.play():this.pause()"></video>
-                            <div class="reel-actions">
-                                <div onclick="alert('Liked!')"><i class="fas fa-heart text-2xl text-red-500"></i><p class="text-xs">Like</p></div>
-                                <div onclick="alert('Comment section opening...')"><i class="fas fa-comment text-2xl"></i><p class="text-xs">Comment</p></div>
-                                <div onclick="alert('Sharing...')"><i class="fas fa-share text-2xl"></i><p class="text-xs">Share</p></div>
-                            </div>
-                            <div class="absolute bottom-4 left-4 text-white">
-                                <b class="text-sm">@${r.uName}</b>
-                            </div>
-                        </div>`;
-                });
-            });
-        }
+// 🔐 XSS Protection
+function escapeHTML(text) {
+  return text.replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  })[m]);
+}
 
-        // ফিড ও ফলো বাটন
-        function loadfeed() {
-            db.ref('posts').on('value', snap => {
-                const list = document.getElementById('feedList'); list.innerHTML = '';
-                let posts = []; snap.forEach(c => posts.push({key: c.key, ...c.val()}));
-                posts.reverse().forEach(p => {
-                    list.innerHTML += `
-                    <div class="post-card">
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="flex items-center gap-2 cursor-pointer" onclick="viewUserProfile('${p.uName}')">
-                                <img src="${p.uPfp}" class="w-10 h-10 rounded-full object-cover">
-                                <div><h4 class="font-bold text-sm">${p.uName}</h4><p class="text-[10px] text-gray-400">Public</p></div>
-                            </div>
-                            ${p.uName !== user.name ? `<button onclick="follow('${p.uName}')" class="follow-btn">ফলো করুন</button>` : ''}
-                        </div>
-                        <p class="text-sm">${p.content}</p>
-                    </div>`;
-                });
-            });
-        }
+// 👥 Follow system (no duplicate)
+function follow(target) {
+  if (target === user.name) return;
 
-        function showSection(id) {
-            ['feed','reels','profile'].forEach(s => {
-                document.getElementById(s+'Section').classList.add('hidden');
-                document.getElementById('ic-'+s)?.classList.remove('active-nav');
-            });
-            document.getElementById(id+'Section').classList.remove('hidden');
-            document.getElementById('ic-'+id)?.classList.add('active-nav');
-            if(id === 'reels') loadReels();
-            if(id === 'profile' && !document.getElementById('pNameDisplay').innerText) viewUserProfile(user.name);
-        }
+  const ref = db.ref(`followers/${target}/${user.name}`);
+  ref.once('value', snap => {
+    if (snap.exists()) {
+      alert("আপনি আগেই ফলো করেছেন");
+    } else {
+      ref.set(true);
+      db.ref(`users/${target}/followers`)
+        .transaction(c => (c || 0) + 1);
+      alert("ফলো করা হয়েছে");
+    }
+  });
+}
 
-        function submitPost() {
-            const txt = document.getElementById('pText').value.trim();
-            if(!txt) return;
-            db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: txt, time: Date.now() });
-            document.getElementById('postModal').classList.add('hidden');
-            document.getElementById('pText').value = '';
-        }
+// 👤 View profile
+function viewUserProfile(name) {
+  db.ref('users/' + name).once('value', snap => {
+    const d = snap.val();
+    if (!d) return;
 
-        function logout() { localStorage.clear(); location.reload(); }
+    pNameDisplay.innerText = d.name;
+    profilePfp.src = d.pfp;
+    fCountDisplay.innerText = (d.followers || 0) + " Followers";
 
-        if(user) {
-            document.getElementById('navPfp').src = user.pfp;
-            loadFeed();
-            showSection('feed');
-        } else {
-            let n = prompt("ইউজারনাম:");
-            if(n) {
-                let d = {name: n, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", followers: 0};
-                localStorage.setItem('freechatbook_user', JSON.stringify(d));
-                db.ref('users/'+n).set(d);
-                location.reload();
-            }
-        }
-    </script>
+    profileActions.innerHTML =
+      name !== user.name
+      ? `<button onclick="follow('${name}')" class="bg-blue-600 text-white flex-1 py-2 rounded-lg font-bold">ফলো করুন</button>`
+      : `<button onclick="logout()" class="bg-red-50 text-red-600 flex-1 py-2 rounded-lg font-bold">Logout</button>`;
+
+    showSection('profile');
+  });
+}
+
+// 📰 Feed loader (FIXED)
+function loadFeed() {
+  db.ref('posts').on('value', snap => {
+    feedList.innerHTML = '';
+    let posts = [];
+    snap.forEach(c => posts.push(c.val()));
+    posts.reverse().forEach(p => {
+      feedList.innerHTML += `
+      <div class="post-card">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2 cursor-pointer" onclick="viewUserProfile('${p.uName}')">
+            <img src="${p.uPfp}" class="w-10 h-10 rounded-full">
+            <div>
+              <h4 class="font-bold text-sm">${p.uName}</h4>
+              <p class="text-[10px] text-gray-400">Public</p>
+            </div>
+          </div>
+          ${p.uName !== user.name ? `<button onclick="follow('${p.uName}')" class="follow-btn">ফলো করুন</button>` : ''}
+        </div>
+        <p class="text-sm">${escapeHTML(p.content)}</p>
+      </div>`;
+    });
+  });
+}
+
+// 🎬 Reels
+function uploadReel(input) {
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    db.ref('reels').push({
+      uName: user.name,
+      uPfp: user.pfp,
+      video: e.target.result,
+      likes: 0,
+      time: Date.now()
+    });
+    alert("রিলস আপলোড হয়েছে!");
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadReels() {
+  db.ref('reels').on('value', snap => {
+    reelList.innerHTML = '';
+    snap.forEach(c => {
+      const r = c.val();
+      reelList.innerHTML += `
+      <div class="relative">
+        <video class="reel-video" src="${r.video}" autoplay muted loop></video>
+        <div class="absolute bottom-4 left-4 text-white font-bold">@${r.uName}</div>
+      </div>`;
+    });
+  });
+}
+
+// 🔀 Navigation
+function showSection(id) {
+  ['feed','reels','profile'].forEach(s => {
+    document.getElementById(s+'Section').classList.add('hidden');
+    document.getElementById('ic-'+s).classList.remove('active-nav');
+  });
+  document.getElementById(id+'Section').classList.remove('hidden');
+  document.getElementById('ic-'+id).classList.add('active-nav');
+  if(id === 'reels') loadReels();
+  if(id === 'profile') viewUserProfile(user.name);
+}
+
+// ✍️ Post
+function submitPost() {
+  const txt = pText.value.trim();
+  if (!txt) return;
+  db.ref('posts').push({
+    uName: user.name,
+    uPfp: user.pfp,
+    content: txt,
+    time: Date.now()
+  });
+  postModal.classList.add('hidden');
+  pText.value = '';
+}
+
+// 🚪 Logout
+function logout() {
+  localStorage.clear();
+  location.reload();
+}
+
+// 🔑 Auth (username check)
+if (user) {
+  navPfp.src = user.pfp;
+  loadFeed();
+  showSection('feed');
+} else {
+  let n = prompt("ইউজারনাম:");
+  if (!n) return;
+  db.ref('users/' + n).once('value', snap => {
+    if (snap.exists()) {
+      alert("এই নাম আগেই নেওয়া হয়েছে");
+      location.reload();
+    } else {
+      let d = {
+        name: n,
+        pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+        followers: 0
+      };
+      localStorage.setItem('freechatbook_user', JSON.stringify(d));
+      db.ref('users/' + n).set(d);
+      location.reload();
+    }
+  });
+}
+</script>
 </body>
 </html>
