@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Final Update</title>
+    <title>Freechatbook - Official</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -19,10 +19,12 @@
         .time-text { font-size: 10px; color: #65676b; margin-top: -2px; }
         .chat-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 10px; align-self: flex-end; max-width: 80%; }
         .chat-other { background: #e4e6eb; color: black; border-radius: 18px 18px 18px 0; padding: 10px; align-self: flex-start; max-width: 80%; }
+        #cBox::-webkit-scrollbar { width: 4px; }
     </style>
 </head>
 <body>
 
+    <!-- Auth Page -->
     <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6 overflow-y-auto">
         <h1 class="text-[#0866FF] text-5xl font-black italic mb-10">freechatbook</h1>
         <div id="loginBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl">
@@ -41,6 +43,7 @@
         </div>
     </div>
 
+    <!-- Main App -->
     <div id="mainApp" class="hidden">
         <nav class="bg-white sticky top-0 border-b p-3 flex justify-between items-center px-4 z-50">
             <h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
@@ -51,32 +54,43 @@
         </nav>
 
         <div class="max-w-xl mx-auto p-3 pb-24">
-            <div id="feedSection"><div id="feedList"></div></div>
+            <!-- Feed Section -->
+            <div id="feedSection">
+                <div class="bg-white p-4 rounded-xl mb-4 shadow-sm flex gap-3 items-center" onclick="openPostModal()">
+                    <img id="feedPostPfp" src="" class="w-10 h-10 rounded-full">
+                    <div class="bg-gray-100 flex-1 p-2 px-4 rounded-full text-gray-500 text-sm">কি ভাবছেন?</div>
+                </div>
+                <div id="feedList"></div>
+            </div>
 
+            <!-- Inbox Section -->
             <div id="inboxSection" class="hidden">
-                <h2 class="font-bold mb-4 text-lg">মেসেঞ্জর</h2>
+                <h2 class="font-bold mb-4 text-lg">মেসেঞ্জার</h2>
                 <div id="chatUserList" class="space-y-2"></div>
             </div>
 
+            <!-- Profile Section -->
             <div id="profileSection" class="hidden">
                 <div class="bg-white p-6 rounded-2xl text-center shadow-sm relative">
                     <img id="profilePfp" src="" class="w-28 h-28 rounded-full mx-auto border-4 border-blue-100 object-cover">
                     <h2 id="pNameDisp" class="text-2xl font-bold mt-3 flex justify-center items-center"></h2>
                     <p id="fCountDisp" class="text-blue-600 font-bold text-sm mt-1">0 Followers</p>
-                    <div id="profileActionArea" class="mt-5">
-                        </div>
+                    <div id="profileActionArea" class="mt-5 flex justify-center gap-2"></div>
+                    <button onclick="logout()" class="mt-8 text-red-500 text-xs font-bold uppercase tracking-widest">Logout</button>
                 </div>
             </div>
         </div>
 
+        <!-- Navigation Bar -->
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
-            <i onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400 cursor-pointer" id="ic-feed"></i>
-            <i onclick="showSection('inbox')" class="fas fa-comment-dots text-xl text-gray-400 cursor-pointer" id="ic-inbox"></i>
+            <i onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400 cursor-pointer nav-icon" id="ic-feed"></i>
+            <i onclick="showSection('inbox')" class="fas fa-comment-dots text-xl text-gray-400 cursor-pointer nav-icon" id="ic-inbox"></i>
             <i onclick="openPostModal()" class="fas fa-plus-square text-xl text-gray-400 cursor-pointer"></i>
-            <i onclick="viewProfile(user.name)" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer" id="ic-profile"></i>
+            <i onclick="viewProfile(user.name)" class="fas fa-user-circle text-xl text-gray-400 cursor-pointer nav-icon" id="ic-profile"></i>
         </div>
     </div>
 
+    <!-- Chat Window -->
     <div id="chatWin" class="fixed inset-0 bg-white z-[1000] hidden flex flex-col">
         <div class="p-3 border-b flex items-center gap-3">
             <i onclick="closeChat()" class="fas fa-arrow-left cursor-pointer text-blue-600"></i>
@@ -90,6 +104,7 @@
         </div>
     </div>
 
+    <!-- Post Modal -->
     <div id="postModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md p-6 rounded-2xl">
             <div class="flex justify-between mb-4 font-bold">নতুন পোস্ট <i onclick="closePostModal()" class="fas fa-times cursor-pointer"></i></div>
@@ -98,11 +113,12 @@
                 <label class="block text-xs font-bold text-gray-500 mb-1">ছবি যুক্ত করুন (Optional):</label>
                 <input type="file" id="pImage" accept="image/*" class="text-xs">
             </div>
-            <button onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Post Now</button>
+            <button id="postBtn" onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Post Now</button>
         </div>
     </div>
 
     <script>
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
@@ -116,7 +132,16 @@
         const db = firebase.database();
         let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // ২. সাইন আপ ও লগইন টগল
+        // Initialize App
+        if(user) {
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('navPfp').src = user.pfp;
+            document.getElementById('feedPostPfp').src = user.pfp;
+            showSection('feed');
+            loadFeed();
+        }
+
         function toggleAuth(type) {
             document.getElementById('loginBox').classList.toggle('hidden', type === 'signup');
             document.getElementById('signupBox').classList.toggle('hidden', type === 'login');
@@ -125,24 +150,75 @@
         function handleAuth(type) {
             const u = document.getElementById(type === 'login' ? 'lUser' : 'rUser').value.trim().toLowerCase();
             const p = document.getElementById(type === 'login' ? 'lPass' : 'rPass').value.trim();
-            if(!u || !p) return alert("ঘরগুলো পূরণ করুন");
+            if(!u || !p) return alert("সবগুলো ঘর পূরণ করুন");
 
             if(type === 'signup') {
                 db.ref('users/' + u).once('value', s => {
-                    if(s.exists()) return alert("Username taken");
+                    if(s.exists()) return alert("Username already taken!");
                     const data = { name: u, pass: p, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", followers: 0 };
-                    db.ref('users/' + u).set(data).then(() => { alert("সফল! এখন লগইন করুন।"); toggleAuth('login'); });
+                    db.ref('users/' + u).set(data).then(() => { 
+                        alert("একাউন্ট তৈরি সফল! লগইন করুন।"); 
+                        toggleAuth('login'); 
+                    });
                 });
             } else {
                 db.ref('users/' + u).once('value', s => {
                     const d = s.val();
-                    if(d && d.pass === p) { localStorage.setItem('freechatbook_user', JSON.stringify(d)); location.reload(); }
-                    else alert("ভুল তথ্য");
+                    if(d && d.pass === p) { 
+                        localStorage.setItem('freechatbook_user', JSON.stringify(d)); 
+                        location.reload(); 
+                    } else alert("ভুল ইউজারনাম বা পাসওয়ার্ড!");
                 });
             }
         }
 
-        // ৫. সময় ক্যালকুলেশন
+        function showSection(sec) {
+            ['feed', 'inbox', 'profile'].forEach(s => document.getElementById(s + 'Section').classList.add('hidden'));
+            document.getElementById(sec + 'Section').classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-icon').forEach(i => i.classList.remove('active-nav'));
+            document.getElementById('ic-' + sec).classList.add('active-nav');
+
+            if(sec === 'inbox') loadInbox();
+        }
+
+        function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
+        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
+
+        function submitPost() {
+            const t = document.getElementById('pText').value.trim();
+            const f = document.getElementById('pImage').files[0];
+            const btn = document.getElementById('postBtn');
+
+            if(!t && !f) return alert("কিছু লিখুন বা ছবি দিন");
+            btn.innerText = "Posting...";
+            btn.disabled = true;
+
+            const pushData = (img = null) => {
+                db.ref('posts').push({
+                    uName: user.name,
+                    uPfp: user.pfp,
+                    content: t,
+                    image: img,
+                    time: Date.now()
+                }).then(() => {
+                    btn.innerText = "Post Now";
+                    btn.disabled = false;
+                    document.getElementById('pText').value = '';
+                    document.getElementById('pImage').value = '';
+                    closePostModal();
+                });
+            };
+
+            if(f) {
+                const reader = new FileReader();
+                reader.onload = e => pushData(e.target.result);
+                reader.readAsDataURL(f);
+            } else {
+                pushData();
+            }
+        }
+
         function getTimeAgo(time) {
             const diff = Math.floor((Date.now() - time) / 1000);
             if (diff < 60) return "এইমাত্র";
@@ -172,15 +248,17 @@
             });
         }
 
-        // ৪. ইনবক্স ও চ্যাট
         function loadInbox() {
             db.ref('users').once('value', snap => {
                 const list = document.getElementById('chatUserList'); list.innerHTML = '';
                 snap.forEach(c => {
                     const u = c.val();
                     if(u.name !== user.name) {
-                        list.innerHTML += `<div onclick="openChat('${u.name}','${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer border">
-                        <img src="${u.pfp}" class="w-11 h-11 rounded-full border"><b>${u.name}</b></div>`;
+                        list.innerHTML += `
+                        <div onclick="openChat('${u.name}','${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer border hover:bg-gray-50">
+                            <img src="${u.pfp}" class="w-11 h-11 rounded-full border object-cover">
+                            <b class="text-gray-700">${u.name}</b>
+                        </div>`;
                     }
                 });
             });
@@ -192,6 +270,7 @@
             document.getElementById('cUserName').innerText = name;
             document.getElementById('cUserPfp').src = pfp;
             document.getElementById('chatWin').classList.remove('hidden');
+            
             db.ref('chats/' + activeChat).on('value', s => {
                 const b = document.getElementById('cBox'); b.innerHTML = '';
                 s.forEach(c => {
@@ -201,21 +280,46 @@
                 b.scrollTop = b.scrollHeight;
             });
         }
+
         function sendMsg() {
-            const t = document.getElementById('cInput').value; if(!t) return;
+            const input = document.getElementById('cInput');
+            const t = input.value.trim(); if(!t) return;
             db.ref('chats/' + activeChat).push({ sender: user.name, text: t, time: Date.now() });
-            document.getElementById('cInput').value = '';
+            input.value = '';
         }
+
         function closeChat() { document.getElementById('chatWin').classList.add('hidden'); }
 
-        // ৩. ইমেজ পোস্ট ফাংশন
-        function submitPost() {
-            const t = document.getElementById('pText').value.trim();
-            const f = document.getElementById('pImage').files[0];
-            const push = (img = null) => {
-                db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: t, image: img, time: Date.now() });
-                closePostModal();
-            };
-            if(f) {
-                const reader = new FileReader();
-                reader.onload = e => push(e.target.result);
+        function viewProfile(name) {
+            showSection('profile');
+            db.ref('users/' + name).on('value', s => {
+                const d = s.val();
+                document.getElementById('profilePfp').src = d.pfp;
+                document.getElementById('pNameDisp').innerHTML = `${d.name} <i class="fas fa-check-circle verify-badge"></i>`;
+                document.getElementById('fCountDisp').innerText = (d.followers || 0) + " Followers";
+                
+                let actionHtml = '';
+                if(d.name !== user.name) {
+                    actionHtml = `
+                        <button onclick="openChat('${d.name}','${d.pfp}')" class="bg-gray-200 px-6 py-2 rounded-lg font-bold text-sm">Message</button>
+                        <button onclick="followUser('${d.name}')" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm">Follow</button>
+                    `;
+                } else {
+                    actionHtml = `<button class="bg-gray-200 px-6 py-2 rounded-lg font-bold text-sm">Edit Profile</button>`;
+                }
+                document.getElementById('profileActionArea').innerHTML = actionHtml;
+            });
+        }
+
+        function followUser(name) {
+            db.ref('users/' + name + '/followers').transaction(c => (c || 0) + 1);
+            alert("Followed " + name);
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+    </script>
+</body>
+</html>
