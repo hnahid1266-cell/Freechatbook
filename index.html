@@ -180,35 +180,41 @@
                     const likeCount = p.likes ? Object.keys(p.likes).length : 0;
                     const commentCount = p.comments ? Object.keys(p.comments).length : 0;
                     const isLiked = p.likes && p.likes[user.name] ? 'liked' : '';
+                 function loadFeed() {
+    const list = document.getElementById('feedList');
+    list.innerHTML = ''; // আগের লিস্ট ক্লিয়ার করার জন্য
+
+    db.ref('posts').on('value', snapshot => {
+        snapshot.forEach(child => {
+            const p = child.val();
+            list.innerHTML += `
+            <div class="post-card bg-white p-4 mb-3 rounded-lg shadow-sm">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2 cursor-pointer" onclick="viewProfile('${p.uName}')">
+                        <img src="${p.uPfp}" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <h4 class="font-bold text-sm flex items-center">
+                                ${p.uName} 
+                                <i class="fas fa-check-circle text-blue-600 ml-1" style="font-size: 12px;"></i>
+                            </h4>
+                            <span class="text-gray-500" style="font-size: 10px;">Just now</span>
+                        </div>
+                    </div>
                     
-                    list.innerHTML += `
-                    <div class="post-card">
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="flex items-center gap-2 cursor-pointer" onclick="viewProfile('${p.uName}')">
-                                <img src="${p.uPfp}" class="w-10 h-10 rounded-full object-cover">
-                                <h4 class="font-bold text-sm">${p.uName}</h4>
-                            </div>
-                            ${p.uName !== user.name ? `<button onclick="follow('${p.uName}')" class="text-blue-600 font-bold text-xs">ফলো করুন</button>` : ''}
-                        </div>
-                        <p class="text-sm mb-3">${p.content}</p>
-                        <div class="flex gap-6 border-t pt-3 text-gray-500 font-bold text-xs">
-                            <span onclick="toggleLike('${p.key}')" class="cursor-pointer ${isLiked}"><i class="fas fa-thumbs-up"></i> ${likeCount} Like</span>
-                            <span onclick="openComment('${p.key}')" class="cursor-pointer"><i class="fas fa-comment"></i> ${commentCount} Comment</span>
-                            <span onclick="openChat('${p.uName}', '${p.uPfp}')" class="cursor-pointer text-blue-500"><i class="fas fa-envelope"></i> Message</span>
-                        </div>
-                    </div>`;
-                });
-            });
-        }
+                    <button onclick="followUser('${p.uName}')" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold hover:bg-blue-600 hover:text-white transition">
+                        Follow
+                    </button>
+                </div>
 
-        function toggleLike(pKey) {
-            const likeRef = db.ref('posts/'+pKey+'/likes/'+user.name);
-            likeRef.once('value', s => {
-                if(s.exists()) likeRef.remove();
-                else likeRef.set(true);
-            });
-        }
-
+                <div class="post-body text-sm text-gray-800">
+                    ${p.text}
+                </div>
+            </div>`;
+        });
+    });
+}
+   
+                    
         // --- COMMENT SYSTEM ---
         let currentPostKey = "";
         function openComment(key) {
@@ -238,25 +244,7 @@
         }
 
         // --- PROFILE & GREEN TICK ---
-        function viewProfile(name) {
-            db.ref('users/' + name).once('value', s => {
-                const d = s.val();
-                const followers = d.followers || 0;
-                document.getElementById('pNameDisp').innerText = name;
-                document.getElementById('profilePfp').src = d.pfp;
-                document.getElementById('fCountDisp').innerText = followers + " Followers";
-                
-                // ১০০০ ফলোয়ার হলে সবুজ টিক
-                const badgeBox = document.getElementById('badgeContainer');
-                badgeBox.innerHTML = followers >= 1000 ? `<span class="text-green-600 font-bold text-xs flex items-center"><i class="fas fa-check-circle green-tick"></i> Verified Account</span>` : '';
-
-                document.getElementById('profileActionArea').innerHTML = name === user.name ? 
-                    `<button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg font-bold">Logout (লগআউট)</button>` : 
-                    `<button onclick="follow('${name}')" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">ফলো করুন</button>
-                     <button onclick="openChat('${name}', '${d.pfp}')" class="w-full bg-gray-200 text-black py-2 rounded-lg font-bold">মেসেজ</button>`;
-                showSection('profile');
-            });
-        }
+        
 
         function logout() {
             if(confirm("আপনি কি লগআউট করতে চান?")) {
@@ -290,6 +278,28 @@
                 });
             });
         }
+function viewProfile(name) {
+    db.ref('users/' + name).once('value', s => {
+        const d = s.val();
+        // নামের পাশে ব্লু টিক ব্যাজ (আপনি চাইলে কালার কোড #000 করে কালো করতে পারেন)
+        document.getElementById('pNameDisp').innerHTML = `
+            ${name} <i class="fas fa-check-circle" style="color: #0866FF; margin-left: 5px; font-size: 18px;"></i>
+        `;
+        
+        document.getElementById('profilePfp').src = d.pfp;
+        document.getElementById('fCountDisp').innerText = (d.followers || 0) + " Followers";
+        
+        // ১০০০ ফলোয়ার হলে নিচের গ্রিন টিক (আগের মতই)
+        const followers = d.followers || 0;
+        const badgeBox = document.getElementById('badgeContainer');
+        if(badgeBox) {
+            badgeBox.innerHTML = followers >= 1000 ? 
+            `<span class="text-green-600 font-bold text-xs flex items-center mt-1"><i class="fas fa-check-circle mr-1"></i> Verified Account</span>` : '';
+        }
+        
+        showSection('profile');
+    });
+}
 
         function openChat(name, pfp) {
             activeChat = [user.name, name].sort().join("_");
