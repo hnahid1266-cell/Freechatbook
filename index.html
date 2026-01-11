@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Freechatbook - Ultimate Fast Version</title>
+<title>Freechatbook - Stable Version</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -11,217 +11,127 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-body{background:#f0f2f5;font-family:'Segoe UI',sans-serif}
+body{background:#f0f2f5;font-family:Segoe UI}
 .hidden{display:none}
 .post-card{background:#fff;border-radius:14px;padding:15px;box-shadow:0 1px 2px rgba(0,0,0,.1);margin-bottom:12px}
-.active-nav{color:#0866FF!important}
-.follow-btn{background:#0866FF;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:bold}
+.active-nav{color:#0866FF}
 .verify-badge{color:#000;font-size:13px;margin-left:4px}
-.reel-video{height:75vh;width:100%;background:#000;border-radius:16px;object-fit:cover}
+.reel-video{height:75vh;width:100%;object-fit:cover;border-radius:16px}
 </style>
 </head>
 
 <body>
 
-<div id="mainApp">
-<!-- NAV -->
-<nav class="bg-white sticky top-0 border-b p-3 flex justify-between items-center z-50">
-<h1 class="text-[#0866FF] text-2xl font-black italic">Freechatbook</h1>
-<img id="navPfp" onclick="showSection('profile')" class="w-9 h-9 rounded-full border-2 border-blue-500 object-cover cursor-pointer">
+<div id="app">
+
+<nav class="bg-white p-3 flex justify-between items-center sticky top-0 z-50">
+<h1 class="text-blue-600 text-2xl font-black italic">Freechatbook</h1>
+<img id="navPfp" class="w-9 h-9 rounded-full cursor-pointer" onclick="show('profile')">
 </nav>
 
-<!-- BODY -->
 <div class="max-w-xl mx-auto p-3 pb-24">
 
-<!-- FEED -->
-<div id="feedSection">
+<div id="feed">
 <div id="feedList"></div>
 </div>
 
-<!-- REELS -->
-<div id="reelsSection" class="hidden">
-<div class="flex justify-between mb-3">
-<h2 class="font-bold">Reels</h2>
-<button onclick="reelUpload.click()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs">Upload</button>
-<input type="file" id="reelUpload" class="hidden" accept="video/*" onchange="uploadReel(this)">
-</div>
+<div id="reels" class="hidden">
 <div id="reelList" class="space-y-6"></div>
 </div>
 
-<!-- PROFILE -->
-<div id="profileSection" class="hidden">
-<div class="bg-white p-6 rounded-2xl text-center shadow">
-<img id="profilePfp" class="w-28 h-28 rounded-full mx-auto border-4 border-blue-500">
-<h2 id="pNameDisplay" class="text-2xl font-bold mt-2"></h2>
-<p id="fCountDisplay" class="text-blue-600 font-bold text-sm"></p>
-<div id="profileActions" class="mt-4 flex gap-2"></div>
-</div>
+<div id="profile" class="hidden bg-white p-6 rounded-2xl text-center">
+<img id="profilePfp" class="w-28 h-28 mx-auto rounded-full border-4 border-blue-500">
+<h2 id="profileName" class="text-xl font-bold mt-2"></h2>
+<p id="profileFollowers" class="text-sm text-blue-600"></p>
+<button onclick="logout()" class="mt-4 bg-red-100 text-red-600 px-6 py-2 rounded-lg">Logout</button>
 </div>
 
 </div>
 
-<!-- BOTTOM NAV -->
-<div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
-<i id="ic-feed" onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400"></i>
-<i id="ic-reels" onclick="showSection('reels')" class="fas fa-play-circle text-xl text-gray-400"></i>
-<i onclick="postModal.classList.remove('hidden')" class="fas fa-plus-square text-xl text-gray-400"></i>
-<i id="ic-profile" onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400"></i>
-</div>
+<div class="fixed bottom-0 w-full bg-white border-t flex justify-around p-3">
+<i onclick="show('feed')" class="fas fa-home text-xl"></i>
+<i onclick="show('reels')" class="fas fa-play-circle text-xl"></i>
+<i onclick="openPost()" class="fas fa-plus-square text-xl"></i>
+<i onclick="show('profile')" class="fas fa-user text-xl"></i>
 </div>
 
-<!-- POST MODAL -->
-<div id="postModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
-<div class="bg-white p-6 w-full max-w-md rounded-2xl">
-<textarea id="pText" class="w-full p-4 bg-gray-100 rounded-xl" placeholder="কি ভাবছেন?"></textarea>
-<button onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 mt-3 rounded-xl font-bold">Post</button>
+</div>
+
+<div id="postModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
+<div class="bg-white p-6 w-full max-w-md rounded-xl">
+<textarea id="postText" class="w-full p-3 bg-gray-100 rounded-xl" placeholder="কি ভাবছেন?"></textarea>
+<button onclick="post()" class="w-full mt-3 bg-blue-600 text-white py-2 rounded-xl">Post</button>
 </div>
 </div>
 
 <script>
-// 🔥 Firebase
 firebase.initializeApp({
 apiKey:"AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
 authDomain:"freechatbook-42f04.firebaseapp.com",
 databaseURL:"https://freechatbook-42f04-default-rtdb.firebaseio.com",
-projectId:"freechatbook-42f04",
-storageBucket:"freechatbook-42f04.appspot.com",
-messagingSenderId:"784680329144",
-appId:"1:784680329144:web:ccacf6e9d71fd25772394d"
+projectId:"freechatbook-42f04"
 });
 const db=firebase.database();
 
-// DOM
-const feedList=document.getElementById('feedList');
-const reelList=document.getElementById('reelList');
-const navPfp=document.getElementById('navPfp');
-const pNameDisplay=document.getElementById('pNameDisplay');
-const profilePfp=document.getElementById('profilePfp');
-const fCountDisplay=document.getElementById('fCountDisplay');
-const profileActions=document.getElementById('profileActions');
+const feedList=document.getElementById("feedList");
+const reelList=document.getElementById("reelList");
+const postModal=document.getElementById("postModal");
+const postText=document.getElementById("postText");
 
-// USER
-let user=JSON.parse(localStorage.getItem('freechatbook_user'));
+let user=JSON.parse(localStorage.getItem("freechat_user"));
 
-// Security
-const escapeHTML=t=>t.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-
-// Follow
-function follow(target){
-if(target===user.name)return;
-db.ref(`followers/${target}/${user.name}`).once('value',s=>{
-if(s.exists())alert("আগেই ফলো করেছেন");
-else{
-db.ref(`followers/${target}/${user.name}`).set(true);
-db.ref(`users/${target}/followers`).transaction(c=>(c||0)+1);
-alert("ফলো করা হয়েছে");
-}
-});
+if(!user){
+let name=prompt("Username দিন");
+if(!name) location.reload();
+user={name,pfp:"https://i.imgur.com/6VBx3io.png"};
+localStorage.setItem("freechat_user",JSON.stringify(user));
+db.ref("users/"+name).set(user);
 }
 
-// View profile
-function viewUserProfile(name){
-db.ref('users/'+name).once('value',s=>{
-let d=s.val();if(!d)return;
-pNameDisplay.innerHTML=`${d.name} <i class="fas fa-check-circle verify-badge"></i>`;
-profilePfp.src=d.pfp;
-fCountDisplay.innerText=(d.followers||0)+" Followers";
-profileActions.innerHTML=name!==user.name?
-`<button onclick="follow('${name}')" class="bg-blue-600 text-white flex-1 py-2 rounded-lg font-bold">ফলো</button>`:
-`<button onclick="logout()" class="bg-red-50 text-red-600 flex-1 py-2 rounded-lg font-bold">Logout</button>`;
-showSection('profile');
-});
-}
+document.getElementById("navPfp").src=user.pfp;
 
-// Feed
+function escapeHTML(t=""){return t.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}
+
 function loadFeed(){
-db.ref('posts').on('value',s=>{
-feedList.innerHTML='';
-let arr=[];
-s.forEach(c=>arr.push(c.val()));
-arr.reverse().forEach(p=>{
+db.ref("posts").on("value",s=>{
+feedList.innerHTML="";
+let a=[];
+s.forEach(c=>a.push(c.val()));
+a.reverse().forEach(p=>{
 feedList.innerHTML+=`
 <div class="post-card">
-<div class="flex justify-between">
-<div class="flex gap-2 cursor-pointer" onclick="viewUserProfile('${p.uName}')">
-<img src="${p.uPfp}" class="w-10 h-10 rounded-full">
-<div>
-<b>${p.uName} <i class="fas fa-check-circle verify-badge"></i></b>
-<p class="text-xs text-gray-400">Public</p>
-</div>
-</div>
-${p.uName!==user.name?`<button class="follow-btn" onclick="follow('${p.uName}')">Follow</button>`:''}
-</div>
-<p class="mt-2">${escapeHTML(p.content)}</p>
+<b>${p.u} <i class="fas fa-check-circle verify-badge"></i></b>
+<p class="mt-2">${escapeHTML(p.t)}</p>
 </div>`;
 });
 });
 }
 
-// Reels
-function uploadReel(i){
-let r=new FileReader();
-r.onload=e=>{
-db.ref('reels').push({uName:user.name,uPfp:user.pfp,video:e.target.result});
-alert("Reel uploaded");
-};
-r.readAsDataURL(i.files[0]);
+function post(){
+if(!postText.value.trim())return;
+db.ref("posts").push({u:user.name,t:postText.value});
+postText.value="";
+postModal.classList.add("hidden");
 }
 
-function loadReels(){
-db.ref('reels').on('value',s=>{
-reelList.innerHTML='';
-s.forEach(c=>{
-let r=c.val();
-reelList.innerHTML+=`
-<div class="relative">
-<video class="reel-video" src="${r.video}" autoplay muted loop></video>
-<div class="absolute bottom-3 left-3 text-white font-bold">@${r.uName}</div>
-</div>`;
-});
-});
+function openPost(){postModal.classList.remove("hidden")}
+
+function show(id){
+["feed","reels","profile"].forEach(s=>document.getElementById(s).classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+if(id==="profile"){
+profileName.innerHTML=user.name+' <i class="fas fa-check-circle verify-badge"></i>';
+profilePfp.src=user.pfp;
+}
 }
 
-// Navigation
-function showSection(id){
-['feed','reels','profile'].forEach(s=>{
-document.getElementById(s+'Section').classList.add('hidden');
-document.getElementById('ic-'+s).classList.remove('active-nav');
-});
-document.getElementById(id+'Section').classList.remove('hidden');
-document.getElementById('ic-'+id).classList.add('active-nav');
-if(id==='reels')loadReels();
-if(id==='profile')viewUserProfile(user.name);
-}
-
-// Post
-function submitPost(){
-if(!pText.value.trim())return;
-db.ref('posts').push({uName:user.name,uPfp:user.pfp,content:pText.value});
-postModal.classList.add('hidden');
-pText.value='';
-}
-
-// Logout
-function logout(){localStorage.clear();location.reload();}
-
-// Auth
-if(user){
-navPfp.src=user.pfp;
-loadFeed();
-showSection('feed');
-}else{
-let n=prompt("Username");
-if(!n)return;
-db.ref('users/'+n).once('value',s=>{
-if(s.exists()){alert("Taken");location.reload();}
-else{
-let d={name:n,pfp:"https://cdn-icons-png.flaticon.com/512/149/149071.png",followers:0};
-localStorage.setItem('freechatbook_user',JSON.stringify(d));
-db.ref('users/'+n).set(d);
+function logout(){
+localStorage.clear();
 location.reload();
 }
-});
-}
+
+loadFeed();
+show("feed");
 </script>
 
 </body>
