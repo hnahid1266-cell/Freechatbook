@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freechatbook - Final Fixed Version</title>
+    <title>Freechatbook - Official Final Version</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -50,9 +52,7 @@
                     </div>
                     <h2 id="pNameDisplay" class="text-2xl font-bold mt-3 flex justify-center items-center"></h2>
                     <p id="fCountDisplay" class="text-blue-600 font-bold text-sm">0 Followers</p>
-                    
-                    <div id="profileActionArea" class="mt-5 flex gap-2">
-                        </div>
+                    <div id="profileActionArea" class="mt-5 flex gap-2"></div>
                 </div>
                 <div id="userPosts" class="mt-4"></div>
             </div>
@@ -78,32 +78,48 @@
     </div>
 
     <script>
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
             databaseURL: "https://freechatbook-42f04-default-rtdb.firebaseio.com",
             projectId: "freechatbook-42f04",
-            storageBucket: "freechatbook-42f04.firebasestorage.app",
+            storageBucket: "freechatbook-42f04.appspot.com", // storageBucket ঠিক করা হয়েছে
             messagingSenderId: "784680329144",
             appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
         };
-        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let user = JSON.parse(localStorage.getItem('freechatbook_user'));
+        const storage = firebase.storage();
 
-        // --- মোডাল কন্ট্রোল ---
+        let user;
+        try {
+            user = JSON.parse(localStorage.getItem('freechatbook_user'));
+        } catch(e) {
+            user = null;
+        }
+
+        // --- Functions ---
+
         function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
         function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
 
-        // --- ফলো সিস্টেম ---
+        function showSection(id) {
+            ['feed','reels','profile'].forEach(s => {
+                document.getElementById(s+'Section').classList.add('hidden');
+                document.getElementById('ic-'+s)?.classList.remove('active-nav');
+            });
+            document.getElementById(id+'Section').classList.remove('hidden');
+            document.getElementById('ic-'+id)?.classList.add('active-nav');
+        }
+
         function handleFollow(targetName) {
-            if(targetName === user.name) return;
+            if(!user || targetName === user.name) return;
             db.ref('users/' + targetName + '/followers').transaction(c => (c || 0) + 1);
             alert(targetName + "-কে ফলো করা হয়েছে!");
         }
 
-        // --- প্রোফাইল ভিউ (নামে ক্লিক করলে) ---
         function viewUserProfile(name) {
             db.ref('users/' + name).once('value', snap => {
                 const d = snap.val() || {};
@@ -121,10 +137,10 @@
             });
         }
 
-        // --- ফিড লোড ---
         function loadFeed() {
             db.ref('posts').on('value', snap => {
-                const list = document.getElementById('feedList'); list.innerHTML = '';
+                const list = document.getElementById('feedList'); 
+                list.innerHTML = '';
                 let posts = [];
                 snap.forEach(c => posts.push({key: c.key, ...c.val()}));
                 posts.reverse().forEach(p => {
@@ -146,45 +162,65 @@
             });
         }
 
-        function showSection(id) {
-            ['feed','reels','profile'].forEach(s => {
-                document.getElementById(s+'Section').classList.add('hidden');
-                document.getElementById('ic-'+s)?.classList.remove('active-nav');
-            });
-            document.getElementById(id+'Section').classList.remove('hidden');
-            document.getElementById('ic-'+id)?.classList.add('active-nav');
+        function uploadReel(input) {
+            const file = input.files[0];
+            if(!file || !user) return;
+            
+            const storageRef = storage.ref('reels/' + Date.now() + '_' + file.name);
+            alert("Uploading... Please wait.");
+            
+            storageRef.put(file).then(snapshot => {
+                snapshot.ref.getDownloadURL().then(url => {
+                    db.ref('reels').push({
+                        uName: user.name, 
+                        uPfp: user.pfp, 
+                        videoURL: url, 
+                        time: Date.now()
+                    });
+                    alert("Reel uploaded successfully!");
+                });
+            }).catch(error => alert("Upload failed: " + error.message));
         }
-function uploadReel(input) {
-    const file = input.files[0];
-    if(!file) return;
-    
-    const storageRef = firebase.storage().ref('reels/' + Date.now() + '_' + file.name);
-    const uploadTask = storageRef.put(file);
 
-    uploadTask.on('state_changed',
-        snapshot => {},
-        error => alert("Upload failed: " + error),
-        () => {
-            uploadTask.snapshot.ref.getDownloadURL().then(url => {
-                db.ref('reels').push({uName: user.name, uPfp: user.pfp, videoURL: url, time: Date.now()});
-                alert("Reel uploaded!");
+        function loadReels() {
+            db.ref('reels').on('value', snap => {
+                const reelList = document.getElementById('reelList');
+                reelList.innerHTML = '';
+                let reels = [];
+                snap.forEach(c => reels.push({...c.val(), key: c.key}));
+                reels.reverse().forEach(r => {
+                    reelList.innerHTML += `
+                        <div class="bg-black rounded-xl overflow-hidden p-2">
+                            <video controls class="w-full max-h-[500px]" src="${r.videoURL}"></video>
+                            <div class="p-2 bg-white">
+                                <p class="text-sm font-bold flex items-center">${r.uName} <i class="fas fa-check-circle verify-badge"></i></p>
+                            </div>
+                        </div>`;
+                });
             });
         }
-    );
-}
+
         function submitPost() {
             const txt = document.getElementById('pText').value.trim();
-            if(!txt) return;
-            db.ref('posts').push({ uName: user.name, uPfp: user.pfp, content: txt, time: Date.now() });
+            if(!txt || !user) return;
+            db.ref('posts').push({ 
+                uName: user.name, 
+                uPfp: user.pfp, 
+                content: txt, 
+                time: Date.now() 
+            });
             closePostModal();
             document.getElementById('pText').value = '';
         }
 
         function logout() { localStorage.clear(); location.reload(); }
 
+        // --- Initialization ---
+
         if(user) {
-            document.getElementById('navPfp').src = user.pfp;
+            document.getElementById('navPfp').src = user.pfp || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
             loadFeed();
+            loadReels();
             showSection('feed');
         } else {
             let n = prompt("ইউজারনাম দিন:");
@@ -195,24 +231,6 @@ function uploadReel(input) {
                 location.reload();
             }
         }
-    let user;
-try {
-    user = JSON.parse(localStorage.getItem('freechatbook_user'));
-} catch(e) {
-    user = null;
-}
-    db.ref('reels').on('value', snap => {
-    const reelList = document.getElementById('reelList');
-    reelList.innerHTML = '';
-    let reels = [];
-    snap.forEach(c => reels.push({...c.val(), key: c.key}));
-    reels.reverse().forEach(r => {
-        reelList.innerHTML += `
-            <video controls class="w-full rounded-xl" src="${r.videoURL}"></video>
-            <p class="text-sm mt-1">${r.uName} <i class="fas fa-check-circle verify-badge"></i></p>
-        `;
-    });
-});
     </script>
 </body>
 </html>
