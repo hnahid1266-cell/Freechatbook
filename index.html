@@ -25,16 +25,55 @@
 </head>
 <body>
 
-<div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6 overflow-y-auto">
-    <h1 class="text-[#0866FF] text-5xl font-black italic mb-10">freechatbook</h1>
-    
-    <div id="loginBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl">
-        <h2 class="font-bold mb-4 text-center">লগইন</h2>
-        <input type="text" id="lUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded-xl mb-3 outline-none focus:border-blue-500">
-        <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded-xl mb-4 outline-none">
-        <button onclick="handleAuth('login')" class="w-full bg-[#0866FF] text-white py-3 rounded-xl font-bold mb-3">Login</button>
-        <p class="text-center text-sm">নতুন? <span onclick="toggleAuth('signup')" class="text-blue-600 cursor-pointer font-bold">একাউন্ট তৈরি করুন</span></p>
-    </div>
+// লগইন ও সাইনআপ পরিবর্তন করার ফাংশন
+function toggleAuth(type) {
+    if(type === 'signup') {
+        document.getElementById('loginBox').classList.add('hidden');
+        document.getElementById('signupBox').classList.remove('hidden');
+    } else {
+        document.getElementById('signupBox').classList.add('hidden');
+        document.getElementById('loginBox').classList.remove('hidden');
+    }
+}
+
+// লগইন ও সাইনআপ হ্যান্ডেলার
+function handleAuth(type) {
+    const u = document.getElementById(type === 'login' ? 'lUser' : 'rUser').value.trim();
+    const p = document.getElementById(type === 'login' ? 'lPass' : 'rPass').value.trim();
+
+    if(!u || !p) { alert("সবগুলো ঘর পূরণ করুন!"); return; }
+
+    if(type === 'signup') {
+        db.ref('users/' + u).once('value', snap => {
+            if(snap.exists()) {
+                alert("এই ইউজারনামটি আগেই নেওয়া হয়েছে!");
+            } else {
+                const newUser = {
+                    name: u,
+                    pass: p,
+                    pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                    followers: 0,
+                    joinIndex: Date.now()
+                };
+                db.ref('users/' + u).set(newUser).then(() => {
+                    alert("একাউন্ট তৈরি সফল! এখন লগইন করুন।");
+                    toggleAuth('login');
+                });
+            }
+        });
+    } else {
+        db.ref('users/' + u).once('value', snap => {
+            const data = snap.val();
+            if(data && data.pass === p) {
+                localStorage.setItem('freechatbook_user', JSON.stringify(data));
+                location.reload();
+            } else {
+                alert("ইউজারনাম বা পাসওয়ার্ড ভুল!");
+            }
+        });
+    }
+}
+
 
     <div id="signupBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl hidden">
         <h2 class="font-bold mb-4 text-center">নতুন একাউন্ট</h2>
