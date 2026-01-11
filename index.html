@@ -25,6 +25,16 @@
 </head>
 <body>
 
+
+  <div id="signupBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl hidden">
+        <h2 class="font-bold mb-4 text-center">নতুন একাউন্ট</h2>
+        <input type="text" id="rUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded-xl mb-3 outline-none">
+        <input type="password" id="rPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded-xl mb-4 outline-none">
+        <button onclick="handleAuth('signup')" class="w-full bg-[#42b72a] text-white py-3 rounded-xl font-bold mb-3">Sign Up</button>
+        <p class="text-center text-sm">আগে থেকেই আছে? <span onclick="toggleAuth('login')" class="text-blue-600 cursor-pointer font-bold">লগইন করুন</span></p>
+    </div>
+</div>
+
 // লগইন ও সাইনআপ পরিবর্তন করার ফাংশন
 function toggleAuth(type) {
     if(type === 'signup') {
@@ -73,17 +83,6 @@ function handleAuth(type) {
         });
     }
 }
-
-
-    <div id="signupBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-xl hidden">
-        <h2 class="font-bold mb-4 text-center">নতুন একাউন্ট</h2>
-        <input type="text" id="rUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded-xl mb-3 outline-none">
-        <input type="password" id="rPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded-xl mb-4 outline-none">
-        <button onclick="handleAuth('signup')" class="w-full bg-[#42b72a] text-white py-3 rounded-xl font-bold mb-3">Sign Up</button>
-        <p class="text-center text-sm">আগে থেকেই আছে? <span onclick="toggleAuth('login')" class="text-blue-600 cursor-pointer font-bold">লগইন করুন</span></p>
-    </div>
-</div>
-
 
     <div id="mainApp">
         <nav class="bg-white sticky top-0 border-b p-3 flex justify-between items-center px-4 z-50 shadow-sm">
