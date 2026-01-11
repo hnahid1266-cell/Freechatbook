@@ -62,4 +62,167 @@ body{background:#f0f2f5;font-family:'Segoe UI',sans-serif}
 
 <!-- BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50">
-<i id="ic-feed" onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400"></
+<i id="ic-feed" onclick="showSection('feed')" class="fas fa-home text-xl text-gray-400"></i>
+<i id="ic-reels" onclick="showSection('reels')" class="fas fa-play-circle text-xl text-gray-400"></i>
+<i onclick="postModal.classList.remove('hidden')" class="fas fa-plus-square text-xl text-gray-400"></i>
+<i id="ic-profile" onclick="showSection('profile')" class="fas fa-user-circle text-xl text-gray-400"></i>
+</div>
+</div>
+
+<!-- POST MODAL -->
+<div id="postModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
+<div class="bg-white p-6 w-full max-w-md rounded-2xl">
+<textarea id="pText" class="w-full p-4 bg-gray-100 rounded-xl" placeholder="কি ভাবছেন?"></textarea>
+<button onclick="submitPost()" class="w-full bg-blue-600 text-white py-3 mt-3 rounded-xl font-bold">Post</button>
+</div>
+</div>
+
+<script>
+// 🔥 Firebase
+firebase.initializeApp({
+apiKey:"AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
+authDomain:"freechatbook-42f04.firebaseapp.com",
+databaseURL:"https://freechatbook-42f04-default-rtdb.firebaseio.com",
+projectId:"freechatbook-42f04",
+storageBucket:"freechatbook-42f04.appspot.com",
+messagingSenderId:"784680329144",
+appId:"1:784680329144:web:ccacf6e9d71fd25772394d"
+});
+const db=firebase.database();
+
+// DOM
+const feedList=document.getElementById('feedList');
+const reelList=document.getElementById('reelList');
+const navPfp=document.getElementById('navPfp');
+const pNameDisplay=document.getElementById('pNameDisplay');
+const profilePfp=document.getElementById('profilePfp');
+const fCountDisplay=document.getElementById('fCountDisplay');
+const profileActions=document.getElementById('profileActions');
+
+// USER
+let user=JSON.parse(localStorage.getItem('freechatbook_user'));
+
+// Security
+const escapeHTML=t=>t.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+
+// Follow
+function follow(target){
+if(target===user.name)return;
+db.ref(`followers/${target}/${user.name}`).once('value',s=>{
+if(s.exists())alert("আগেই ফলো করেছেন");
+else{
+db.ref(`followers/${target}/${user.name}`).set(true);
+db.ref(`users/${target}/followers`).transaction(c=>(c||0)+1);
+alert("ফলো করা হয়েছে");
+}
+});
+}
+
+// View profile
+function viewUserProfile(name){
+db.ref('users/'+name).once('value',s=>{
+let d=s.val();if(!d)return;
+pNameDisplay.innerHTML=`${d.name} <i class="fas fa-check-circle verify-badge"></i>`;
+profilePfp.src=d.pfp;
+fCountDisplay.innerText=(d.followers||0)+" Followers";
+profileActions.innerHTML=name!==user.name?
+`<button onclick="follow('${name}')" class="bg-blue-600 text-white flex-1 py-2 rounded-lg font-bold">ফলো</button>`:
+`<button onclick="logout()" class="bg-red-50 text-red-600 flex-1 py-2 rounded-lg font-bold">Logout</button>`;
+showSection('profile');
+});
+}
+
+// Feed
+function loadFeed(){
+db.ref('posts').on('value',s=>{
+feedList.innerHTML='';
+let arr=[];
+s.forEach(c=>arr.push(c.val()));
+arr.reverse().forEach(p=>{
+feedList.innerHTML+=`
+<div class="post-card">
+<div class="flex justify-between">
+<div class="flex gap-2 cursor-pointer" onclick="viewUserProfile('${p.uName}')">
+<img src="${p.uPfp}" class="w-10 h-10 rounded-full">
+<div>
+<b>${p.uName} <i class="fas fa-check-circle verify-badge"></i></b>
+<p class="text-xs text-gray-400">Public</p>
+</div>
+</div>
+${p.uName!==user.name?`<button class="follow-btn" onclick="follow('${p.uName}')">Follow</button>`:''}
+</div>
+<p class="mt-2">${escapeHTML(p.content)}</p>
+</div>`;
+});
+});
+}
+
+// Reels
+function uploadReel(i){
+let r=new FileReader();
+r.onload=e=>{
+db.ref('reels').push({uName:user.name,uPfp:user.pfp,video:e.target.result});
+alert("Reel uploaded");
+};
+r.readAsDataURL(i.files[0]);
+}
+
+function loadReels(){
+db.ref('reels').on('value',s=>{
+reelList.innerHTML='';
+s.forEach(c=>{
+let r=c.val();
+reelList.innerHTML+=`
+<div class="relative">
+<video class="reel-video" src="${r.video}" autoplay muted loop></video>
+<div class="absolute bottom-3 left-3 text-white font-bold">@${r.uName}</div>
+</div>`;
+});
+});
+}
+
+// Navigation
+function showSection(id){
+['feed','reels','profile'].forEach(s=>{
+document.getElementById(s+'Section').classList.add('hidden');
+document.getElementById('ic-'+s).classList.remove('active-nav');
+});
+document.getElementById(id+'Section').classList.remove('hidden');
+document.getElementById('ic-'+id).classList.add('active-nav');
+if(id==='reels')loadReels();
+if(id==='profile')viewUserProfile(user.name);
+}
+
+// Post
+function submitPost(){
+if(!pText.value.trim())return;
+db.ref('posts').push({uName:user.name,uPfp:user.pfp,content:pText.value});
+postModal.classList.add('hidden');
+pText.value='';
+}
+
+// Logout
+function logout(){localStorage.clear();location.reload();}
+
+// Auth
+if(user){
+navPfp.src=user.pfp;
+loadFeed();
+showSection('feed');
+}else{
+let n=prompt("Username");
+if(!n)return;
+db.ref('users/'+n).once('value',s=>{
+if(s.exists()){alert("Taken");location.reload();}
+else{
+let d={name:n,pfp:"https://cdn-icons-png.flaticon.com/512/149/149071.png",followers:0};
+localStorage.setItem('freechatbook_user',JSON.stringify(d));
+db.ref('users/'+n).set(d);
+location.reload();
+}
+});
+}
+</script>
+
+</body>
+</html>
