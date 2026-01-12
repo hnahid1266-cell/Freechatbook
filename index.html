@@ -3,88 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Freechatbook - Safe Login</title>
+    <title>Freechatbook - Ultimate Hybrid</title>
     
+    <!-- Stable Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase Libraries (Stable Version) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-app.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-database.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         body { background-color: #f0f2f5; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none !important; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #0866FF; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #0866FF; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Button Loading State */
-        .btn-loading { opacity: 0.7; cursor: not-allowed; }
+        .btn-disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+        .post-img-bg { background-color: #e4e6eb; min-height: 200px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <!-- Auth System -->
+    <!-- 1. AUTH PAGE -->
     <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6">
-        <h1 class="text-[#0866FF] text-4xl font-black italic mb-4">freechatbook</h1>
-        <p class="text-gray-400 mb-6 text-sm">Super Fast Lite Version</p>
+        <h1 class="text-[#0866FF] text-4xl font-black italic mb-2">freechatbook</h1>
+        <p class="text-xs text-gray-400 mb-8">Fast Hybrid Version</p>
         
-        <!-- Login Box -->
-        <div id="loginBox" class="w-full max-w-sm">
-            <input type="text" id="lUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded mb-3 bg-gray-50 outline-blue-500">
-            <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded mb-4 bg-gray-50 outline-blue-500">
+        <div id="loginBox" class="w-full max-w-sm space-y-3">
+            <input type="text" id="lUser" placeholder="Username" class="w-full border p-3 rounded bg-gray-50 outline-blue-500">
+            <input type="password" id="lPass" placeholder="Password" class="w-full border p-3 rounded bg-gray-50 outline-blue-500">
             <button onclick="handleAuth('login')" id="btnLogin" class="w-full bg-[#0866FF] text-white py-3 rounded font-bold text-lg hover:bg-blue-700 transition">Log In</button>
-            <button onclick="toggleAuth('signup')" class="w-full mt-4 text-[#42b72a] font-bold">Create New Account</button>
+            <div class="text-center pt-2"><span onclick="toggleAuth('signup')" class="text-green-600 font-bold cursor-pointer">Create New Account</span></div>
         </div>
 
-        <!-- Signup Box -->
-        <div id="signupBox" class="w-full max-w-sm hidden">
-            <input type="text" id="rUser" placeholder="নতুন ইউজারনাম (ছোট হাতের)" class="w-full border p-3 rounded mb-3 bg-gray-50 outline-green-500">
-            <input type="password" id="rPass" placeholder="নতুন পাসওয়ার্ড" class="w-full border p-3 rounded mb-4 bg-gray-50 outline-green-500">
+        <div id="signupBox" class="w-full max-w-sm space-y-3 hidden">
+            <input type="text" id="rUser" placeholder="New Username (lowercase)" class="w-full border p-3 rounded bg-gray-50 outline-green-500">
+            <input type="password" id="rPass" placeholder="New Password" class="w-full border p-3 rounded bg-gray-50 outline-green-500">
             <button onclick="handleAuth('signup')" id="btnSignup" class="w-full bg-[#42b72a] text-white py-3 rounded font-bold text-lg hover:bg-green-700 transition">Sign Up</button>
-            <button onclick="toggleAuth('login')" class="w-full mt-4 text-blue-600 font-bold">Back to Login</button>
+            <div class="text-center pt-2"><span onclick="toggleAuth('login')" class="text-blue-600 font-bold cursor-pointer">Back to Login</span></div>
         </div>
         
-        <div id="statusMsg" class="mt-4 text-red-500 text-sm font-bold text-center"></div>
-        <button onclick="resetApp()" class="mt-10 text-gray-400 text-xs underline">Trouble logging in? Reset App</button>
+        <div id="statusMsg" class="mt-4 text-center text-sm font-bold text-red-500 min-h-[20px]"></div>
+        <button onclick="hardReset()" class="absolute bottom-5 text-gray-400 text-xs underline">App Freezing? Click to Reset</button>
     </div>
 
-    <!-- Main App UI -->
-    <div id="mainApp" class="hidden max-w-lg mx-auto bg-gray-100 min-h-screen">
+    <!-- 2. MAIN APP -->
+    <div id="mainApp" class="hidden max-w-md mx-auto bg-gray-100 min-h-screen pb-20">
         <!-- Navbar -->
-        <nav class="bg-white sticky top-0 z-50 border-b shadow-sm">
-            <div class="flex justify-between items-center p-3">
-                <h1 class="text-[#0866FF] text-2xl font-black italic cursor-pointer" onclick="location.reload()">freechatbook</h1>
-                <i onclick="logout()" class="fas fa-power-off text-red-500 text-xl cursor-pointer bg-red-50 p-2 rounded-full"></i>
+        <nav class="bg-white sticky top-0 z-50 px-4 py-3 shadow-sm flex justify-between items-center">
+            <h1 class="text-[#0866FF] text-2xl font-black italic cursor-pointer" onclick="location.reload()">freechatbook</h1>
+            <div class="flex gap-4">
+                <i onclick="location.reload()" class="fas fa-sync text-gray-500"></i>
+                <i onclick="logout()" class="fas fa-power-off text-red-500"></i>
             </div>
         </nav>
 
-        <!-- Feed Section -->
-        <div class="p-3">
-            <div class="bg-white p-4 rounded shadow-sm text-center mb-4">
-                <h2 class="text-xl font-bold mb-2">Welcome!</h2>
-                <div class="p-3 bg-gray-100 rounded mb-3 flex items-center justify-between">
-                    <span class="font-bold text-gray-700">Create Post</span>
-                    <button onclick="openPostModal()" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold">Write</button>
-                </div>
-            </div>
-            <div id="feedList" class="flex flex-col gap-3">
-                <div class="text-center py-10 text-gray-400">Loading posts...</div>
-            </div>
+        <!-- Post Input Trigger -->
+        <div class="bg-white p-3 m-2 rounded shadow-sm flex gap-2 items-center cursor-pointer hover:bg-gray-50 transition" onclick="openPostModal()">
+            <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden"><img id="myAvatar" class="w-full h-full object-cover"></div>
+            <div class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-gray-500 text-sm">Write something...</div>
+        </div>
+
+        <!-- Feed List -->
+        <div id="feedList" class="flex flex-col gap-2 px-2">
+            <div class="text-center py-10 text-gray-500">Loading feed...</div>
         </div>
     </div>
 
-    <!-- Post Modal -->
+    <!-- 3. POST MODAL -->
     <div id="postModal" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
         <div class="flex justify-between items-center p-3 border-b shadow-sm">
-            <div class="flex items-center gap-2"><i onclick="document.getElementById('postModal').classList.add('hidden')" class="fas fa-times text-xl p-2"></i> <span class="font-bold">New Post</span></div>
-            <button onclick="submitPost()" id="postBtn" class="bg-blue-600 text-white px-6 py-1.5 rounded font-bold text-sm">POST</button>
+            <button onclick="closePostModal()" class="text-2xl text-gray-600 px-2">&times;</button>
+            <span class="font-bold">Create Post</span>
+            <button onclick="submitPost()" id="btnPost" class="bg-blue-600 text-white px-5 py-1.5 rounded font-bold text-sm shadow-sm">POST</button>
         </div>
+        
         <textarea id="pText" class="w-full p-4 text-lg outline-none flex-1 resize-none" placeholder="What's on your mind?"></textarea>
+        
         <div id="pImgArea" class="hidden p-2 relative bg-gray-50 border-t">
             <img id="pImgPreview" class="h-40 mx-auto object-contain">
-            <button onclick="clearImg()" class="absolute top-2 right-2 text-red-500 bg-white rounded-full p-1 shadow">Remove</button>
+            <button onclick="clearImg()" class="absolute top-2 right-2 text-red-500 bg-white rounded-full p-1 px-3 shadow font-bold text-xs">Remove</button>
         </div>
+        
         <div class="p-3 border-t bg-gray-50">
-            <label class="flex items-center gap-2 text-green-600 font-bold cursor-pointer">
+            <label class="flex items-center gap-2 text-green-600 font-bold cursor-pointer w-fit p-2 rounded hover:bg-green-50">
                 <i class="fas fa-image text-xl"></i> Add Photo
                 <input type="file" id="pImgInput" class="hidden" accept="image/*" onchange="previewFile(this)">
             </label>
@@ -92,8 +92,9 @@
     </div>
 
     <script>
-        // CONFIG
+        // --- CONFIGURATION ---
         const IMGBB_API_KEY = "3d8496a83cf59cbff6ea657e72fa8688";
+        
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
@@ -104,123 +105,104 @@
             appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
         };
 
-        // Initialize Firebase safely
+        // --- INIT ---
         let db;
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
-            console.log("Firebase Connected");
-        } catch (e) {
-            alert("Internet Error: Firebase failed to load. Please refresh.");
-            console.error(e);
-        }
+        } catch (e) { console.error("Firebase init error", e); }
 
-        // Check Login Status
         let user = null;
-        try {
-            user = JSON.parse(localStorage.getItem('fcb_user_safe'));
-        } catch(e) { localStorage.removeItem('fcb_user_safe'); }
+        try { user = JSON.parse(localStorage.getItem('fcb_hybrid_user')); } catch(e) {}
 
         if (user) {
-            showMainApp();
+            initApp();
         } else {
             document.getElementById('authPage').classList.remove('hidden');
         }
 
-        // --- AUTH FUNCTIONS ---
+        function initApp() {
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('myAvatar').src = user.pfp || "https://via.placeholder.com/50";
+            loadFeed();
+        }
+
+        // --- AUTH LOGIC (Anti-Freeze) ---
         function handleAuth(type) {
             const btn = document.getElementById(type === 'login' ? 'btnLogin' : 'btnSignup');
             const status = document.getElementById('statusMsg');
-            const uInput = document.getElementById(type === 'login' ? 'lUser' : 'rUser');
-            const pInput = document.getElementById(type === 'login' ? 'lPass' : 'rPass');
-            
-            const u = uInput.value.trim().toLowerCase().replace(/\s/g, '');
-            const p = pInput.value.trim();
+            const u = document.getElementById(type === 'login' ? 'lUser' : 'rUser').value.trim().toLowerCase().replace(/\s/g, '');
+            const p = document.getElementById(type === 'login' ? 'lPass' : 'rPass').value.trim();
 
-            if (!u || !p) {
-                status.innerText = "Please enter both Username and Password";
-                return;
-            }
+            if (!u || !p) return status.innerText = "Please fill all fields";
 
-            // Visual Feedback
-            const originalText = btn.innerText;
-            btn.innerText = type === 'login' ? "Checking..." : "Creating Account...";
-            btn.classList.add('btn-loading');
-            btn.disabled = true;
+            // Set Loading State
+            const oldText = btn.innerText;
+            btn.innerHTML = `<div class="spinner border-white"></div> Checking...`;
+            btn.classList.add('btn-disabled');
             status.innerText = "";
 
-            if(!db) { alert("Database not connected. Check internet."); restoreBtn(); return; }
+            if (!db) {
+                alert("Database connection failed. Please check internet.");
+                resetBtn(); return;
+            }
 
             const ref = db.ref('users/' + u);
 
             if (type === 'signup') {
                 ref.once('value', s => {
                     if (s.exists()) {
-                        status.innerText = "Username already taken!";
-                        restoreBtn();
+                        status.innerText = "Username taken!";
+                        resetBtn();
                     } else {
                         const data = { name: u, pass: p, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", joined: Date.now() };
-                        ref.set(data).then(() => {
-                            localStorage.setItem('fcb_user_safe', JSON.stringify(data));
-                            location.reload();
-                        }).catch(e => {
-                            status.innerText = "Error: " + e.message;
-                            restoreBtn();
-                        });
+                        ref.set(data).then(() => successLogin(data)).catch(e => { status.innerText = e.message; resetBtn(); });
                     }
                 });
             } else {
                 ref.once('value', s => {
                     const val = s.val();
                     if (val && val.pass === p) {
-                        localStorage.setItem('fcb_user_safe', JSON.stringify(val));
-                        location.reload();
+                        successLogin(val);
                     } else {
-                        status.innerText = "Wrong Username or Password!";
-                        restoreBtn();
+                        status.innerText = "Wrong credentials!";
+                        resetBtn();
                     }
-                }, error => {
-                    status.innerText = "Network Error. Check internet.";
-                    restoreBtn();
+                }).catch(() => {
+                    status.innerText = "Network Error!";
+                    resetBtn();
                 });
             }
 
-            function restoreBtn() {
-                btn.innerText = originalText;
-                btn.classList.remove('btn-loading');
-                btn.disabled = false;
+            function resetBtn() {
+                btn.innerText = oldText;
+                btn.classList.remove('btn-disabled');
+            }
+            function successLogin(data) {
+                localStorage.setItem('fcb_hybrid_user', JSON.stringify(data));
+                location.reload();
             }
         }
 
-        function toggleAuth(type) {
-            document.getElementById('loginBox').classList.toggle('hidden', type === 'signup');
-            document.getElementById('signupBox').classList.toggle('hidden', type === 'login');
+        function toggleAuth(t) {
+            document.getElementById('loginBox').classList.toggle('hidden', t === 'signup');
+            document.getElementById('signupBox').classList.toggle('hidden', t === 'login');
             document.getElementById('statusMsg').innerText = "";
         }
 
-        function showMainApp() {
-            document.getElementById('authPage').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            loadFeed();
-        }
-
         function logout() {
-            if(confirm("Log out?")) {
-                localStorage.removeItem('fcb_user_safe');
-                location.reload();
-            }
+            if(confirm("Logout?")) { localStorage.removeItem('fcb_hybrid_user'); location.reload(); }
         }
 
-        function resetApp() {
-            if(confirm("This will clear app data and refresh. OK?")) {
-                localStorage.clear();
-                location.reload();
-            }
+        function hardReset() {
+            if(confirm("Reset app data? This fixes freezing.")) { localStorage.clear(); location.reload(); }
         }
 
-        // --- POSTING & ImgBB ---
+        // --- POSTING LOGIC (Hybrid System) ---
         function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
-        
+        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
+
         function previewFile(input) {
             const file = input.files[0];
             if(file) {
@@ -234,55 +216,80 @@
         }
 
         async function submitPost() {
-            const btn = document.getElementById('postBtn');
+            const btn = document.getElementById('btnPost');
             const txt = document.getElementById('pText').value.trim();
             const file = document.getElementById('pImgInput').files[0];
 
-            if(!txt && !file) return alert("Write something!");
+            if(!txt && !file) return alert("Write something or add photo!");
 
-            btn.innerText = "Processing...";
-            btn.disabled = true;
+            // Lock UI
+            btn.innerHTML = `<div class="spinner border-white"></div> Working...`;
+            btn.classList.add('btn-disabled');
 
-            let imgUrl = null;
+            let finalImageUrl = null;
 
-            if(file) {
-                btn.innerText = "Uploading Img...";
+            if (file) {
                 try {
-                    // Resize Image Logic (Canvas)
-                    const resizedBlob = await resizeImage(file);
-                    const formData = new FormData();
-                    formData.append('image', resizedBlob);
-                    
-                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-                    const data = await res.json();
-                    
-                    if(data.success) imgUrl = data.data.url;
-                    else throw new Error("Upload failed");
-                } catch(e) {
-                    alert("Image upload failed. Try again.");
-                    btn.innerText = "POST";
-                    btn.disabled = false;
+                    // 1. Resize Image (Browser Side) - Crucial for speed
+                    btn.innerHTML = `<div class="spinner border-white"></div> Optimizing...`;
+                    const { blob, base64 } = await processImage(file);
+
+                    // 2. Try ImgBB Upload
+                    btn.innerHTML = `<div class="spinner border-white"></div> Uploading...`;
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', blob);
+                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        
+                        if (data.success) {
+                            finalImageUrl = data.data.url;
+                            console.log("Uploaded to ImgBB");
+                        } else {
+                            throw new Error("ImgBB Failed");
+                        }
+                    } catch (netErr) {
+                        // 3. Fallback to Firebase (Base64) if ImgBB fails
+                        console.warn("ImgBB failed, using Firebase storage fallback.");
+                        finalImageUrl = base64; 
+                    }
+
+                } catch (e) {
+                    alert("Image processing failed. Try a different photo.");
+                    resetPostBtn();
                     return;
                 }
             }
 
-            btn.innerText = "Publishing...";
+            // 4. Save to Database
+            btn.innerHTML = `<div class="spinner border-white"></div> Publishing...`;
+            
             db.ref('posts').push({
                 uName: user.name,
+                uPfp: user.pfp,
                 content: txt,
-                image: imgUrl,
-                time: Date.now()
+                image: finalImageUrl,
+                time: Date.now(),
+                likes: 0
             }).then(() => {
-                document.getElementById('postModal').classList.add('hidden');
+                closePostModal();
                 document.getElementById('pText').value = '';
                 clearImg();
-                btn.innerText = "POST";
-                btn.disabled = false;
+                resetPostBtn();
+            }).catch(e => {
+                alert("Post failed: " + e.message);
+                resetPostBtn();
             });
+
+            function resetPostBtn() {
+                btn.innerText = "POST";
+                btn.classList.remove('btn-disabled');
+            }
         }
 
-        function resizeImage(file) {
-            return new Promise((resolve) => {
+        // Image Resizer & Converter
+        function processImage(file) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = (e) => {
@@ -291,37 +298,82 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        const maxWidth = 800; 
+                        const maxWidth = 800; // Limit size
                         const scale = maxWidth / img.width;
                         canvas.width = maxWidth;
                         canvas.height = img.height * scale;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob(resolve, 'image/jpeg', 0.7);
+                        
+                        // Return both Blob (for ImgBB) and Base64 (for Fallback)
+                        canvas.toBlob((blob) => {
+                            resolve({
+                                blob: blob,
+                                base64: canvas.toDataURL('image/jpeg', 0.6) // Quality 60%
+                            });
+                        }, 'image/jpeg', 0.6);
                     };
+                    img.onerror = reject;
                 };
             });
         }
 
+        // --- FEED LOGIC ---
         function loadFeed() {
+            // Limit to last 20 posts to prevent lagging
             db.ref('posts').limitToLast(20).on('value', snap => {
                 const list = document.getElementById('feedList');
                 list.innerHTML = '';
-                if(!snap.exists()) { list.innerHTML = '<div class="text-center text-gray-400">No posts yet.</div>'; return; }
                 
+                if (!snap.exists()) {
+                    list.innerHTML = '<div class="text-center py-10 text-gray-400">No posts yet. Be the first!</div>';
+                    return;
+                }
+
                 const posts = [];
-                snap.forEach(c => posts.push(c.val()));
-                
+                snap.forEach(c => posts.push({ key: c.key, ...c.val() }));
+
                 posts.reverse().forEach(p => {
+                    const isMe = p.uName === user.name;
                     list.innerHTML += `
-                    <div class="bg-white p-3 rounded shadow-sm">
-                        <div class="font-bold text-blue-600 mb-1">${p.uName}</div>
-                        <div class="mb-2 whitespace-pre-wrap">${p.content}</div>
-                        ${p.image ? `<img src="${p.image}" class="w-full rounded max-h-80 object-cover bg-gray-100">` : ''}
-                        <div class="text-xs text-gray-400 mt-2">${new Date(p.time).toLocaleString()}</div>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-2 fade-in">
+                        <div class="p-3 flex justify-between items-start">
+                            <div class="flex items-center gap-2">
+                                <img src="${p.uPfp || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full border bg-gray-200 object-cover">
+                                <div>
+                                    <h4 class="font-bold text-sm text-gray-900">${sanitize(p.uName)}</h4>
+                                    <p class="text-xs text-gray-500">${new Date(p.time).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            ${isMe ? `<button onclick="deletePost('${p.key}')" class="text-gray-400 hover:text-red-500 px-2"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                        
+                        ${p.content ? `<div class="px-3 pb-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</div>` : ''}
+                        
+                        ${p.image ? `<div class="post-img-bg"><img src="${p.image}" class="w-full max-h-[500px] object-contain" loading="lazy"></div>` : ''}
+                        
+                        <div class="px-3 py-2 border-t flex items-center gap-4">
+                            <button onclick="likePost('${p.key}')" class="flex items-center gap-1 text-gray-500 font-bold text-sm hover:text-blue-600">
+                                <i class="far fa-thumbs-up"></i> Like (${p.likes || 0})
+                            </button>
+                        </div>
                     </div>`;
                 });
             });
         }
+
+        function sanitize(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function deletePost(id) {
+            if(confirm("Delete this post?")) db.ref('posts/' + id).remove();
+        }
+        function likePost(id) {
+            db.ref('posts/' + id + '/likes').transaction(likes => (likes || 0) + 1);
+        }
+
     </script>
 </body>
 </html>
