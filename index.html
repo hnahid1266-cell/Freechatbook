@@ -3,26 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Freechatbook - Lite Speed</title>
+    <title>Freechatbook - Safe Login</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- Firebase Libraries (Stable Version) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        :root { --fb-blue: #0866FF; --fb-bg: #f0f2f5; }
-        body { background-color: var(--fb-bg); font-family: sans-serif; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f0f2f5; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none !important; }
-        .post-card { background: white; border-radius: 0px; margin-bottom: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-        .active-nav { color: #0866FF !important; border-bottom: 3px solid #0866FF; }
-        .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 15px; margin-bottom: 4px; font-size: 15px; }
-        .my-msg { background: #0866FF; color: white; align-self: flex-end; }
-        .their-msg { background: #e4e6eb; color: black; align-self: flex-start; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #0866FF; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Optimized for Mobile */
-        @media(max-width: 640px) { .post-card { border-radius: 0; } }
+        /* Button Loading State */
+        .btn-loading { opacity: 0.7; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -30,123 +25,69 @@
     <!-- Auth System -->
     <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6">
         <h1 class="text-[#0866FF] text-4xl font-black italic mb-4">freechatbook</h1>
+        <p class="text-gray-400 mb-6 text-sm">Super Fast Lite Version</p>
+        
+        <!-- Login Box -->
         <div id="loginBox" class="w-full max-w-sm">
-            <input type="text" id="lUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded mb-3 bg-gray-50">
-            <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded mb-4 bg-gray-50">
-            <button onclick="handleAuth('login')" class="w-full bg-[#0866FF] text-white py-3 rounded font-bold text-lg">Log In</button>
+            <input type="text" id="lUser" placeholder="ইউজারনাম" class="w-full border p-3 rounded mb-3 bg-gray-50 outline-blue-500">
+            <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded mb-4 bg-gray-50 outline-blue-500">
+            <button onclick="handleAuth('login')" id="btnLogin" class="w-full bg-[#0866FF] text-white py-3 rounded font-bold text-lg hover:bg-blue-700 transition">Log In</button>
             <button onclick="toggleAuth('signup')" class="w-full mt-4 text-[#42b72a] font-bold">Create New Account</button>
         </div>
+
+        <!-- Signup Box -->
         <div id="signupBox" class="w-full max-w-sm hidden">
-            <input type="text" id="rUser" placeholder="নতুন ইউজারনাম (ছোট হাতের)" class="w-full border p-3 rounded mb-3 bg-gray-50">
-            <input type="password" id="rPass" placeholder="নতুন পাসওয়ার্ড" class="w-full border p-3 rounded mb-4 bg-gray-50">
-            <button onclick="handleAuth('signup')" class="w-full bg-[#42b72a] text-white py-3 rounded font-bold text-lg">Sign Up</button>
+            <input type="text" id="rUser" placeholder="নতুন ইউজারনাম (ছোট হাতের)" class="w-full border p-3 rounded mb-3 bg-gray-50 outline-green-500">
+            <input type="password" id="rPass" placeholder="নতুন পাসওয়ার্ড" class="w-full border p-3 rounded mb-4 bg-gray-50 outline-green-500">
+            <button onclick="handleAuth('signup')" id="btnSignup" class="w-full bg-[#42b72a] text-white py-3 rounded font-bold text-lg hover:bg-green-700 transition">Sign Up</button>
             <button onclick="toggleAuth('login')" class="w-full mt-4 text-blue-600 font-bold">Back to Login</button>
         </div>
+        
+        <div id="statusMsg" class="mt-4 text-red-500 text-sm font-bold text-center"></div>
+        <button onclick="resetApp()" class="mt-10 text-gray-400 text-xs underline">Trouble logging in? Reset App</button>
     </div>
 
-    <!-- App UI -->
+    <!-- Main App UI -->
     <div id="mainApp" class="hidden max-w-lg mx-auto bg-gray-100 min-h-screen">
         <!-- Navbar -->
-        <nav class="bg-white sticky top-0 z-50 border-b">
+        <nav class="bg-white sticky top-0 z-50 border-b shadow-sm">
             <div class="flex justify-between items-center p-3">
-                <h1 class="text-[#0866FF] text-2xl font-black italic" onclick="showSection('feed')">freechatbook</h1>
-                <div class="flex gap-4 text-xl text-gray-600">
-                    <i onclick="toggleSearch()" class="fas fa-search"></i>
-                    <i onclick="logout()" class="fas fa-power-off text-red-500"></i>
-                </div>
-            </div>
-            <div class="flex justify-around border-t bg-white">
-                <div onclick="showSection('feed')" id="ic-feed" class="flex-1 py-3 text-center active-nav"><i class="fas fa-home text-xl"></i></div>
-                <div onclick="showSection('inbox')" id="ic-inbox" class="flex-1 py-3 text-center text-gray-500"><i class="fas fa-comment-dots text-xl"></i></div>
-                <div onclick="openPostModal()" class="flex-1 py-3 text-center text-gray-500"><i class="fas fa-plus-square text-xl"></i></div>
-                <div onclick="viewProfile(user.name)" id="ic-profile" class="flex-1 py-3 text-center text-gray-500"><i class="fas fa-user text-xl"></i></div>
+                <h1 class="text-[#0866FF] text-2xl font-black italic cursor-pointer" onclick="location.reload()">freechatbook</h1>
+                <i onclick="logout()" class="fas fa-power-off text-red-500 text-xl cursor-pointer bg-red-50 p-2 rounded-full"></i>
             </div>
         </nav>
 
-        <!-- Search -->
-        <div id="searchBar" class="hidden p-2 bg-white sticky top-[105px] z-40 shadow-sm">
-            <input type="text" id="userSearchInput" oninput="searchUsers()" placeholder="Search users..." class="w-full bg-gray-100 p-2 rounded outline-none">
-            <div id="searchResults" class="mt-1 bg-white"></div>
-        </div>
-        
         <!-- Feed Section -->
-        <div id="feedSection" class="pb-20">
-            <!-- Create Post Trigger -->
-            <div class="p-3 bg-white mb-2 flex items-center gap-3">
-                <img id="myAvatar" src="" class="w-10 h-10 rounded-full border bg-gray-200 object-cover">
-                <div onclick="openPostModal()" class="bg-gray-100 flex-1 rounded-full py-2 px-4 text-gray-500 text-sm">Write something...</div>
+        <div class="p-3">
+            <div class="bg-white p-4 rounded shadow-sm text-center mb-4">
+                <h2 class="text-xl font-bold mb-2">Welcome!</h2>
+                <div class="p-3 bg-gray-100 rounded mb-3 flex items-center justify-between">
+                    <span class="font-bold text-gray-700">Create Post</span>
+                    <button onclick="openPostModal()" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold">Write</button>
+                </div>
             </div>
-            
-            <div id="feedList" class="flex flex-col gap-2">
-                <div class="text-center py-10"><div class="loader mx-auto"></div></div>
+            <div id="feedList" class="flex flex-col gap-3">
+                <div class="text-center py-10 text-gray-400">Loading posts...</div>
             </div>
-        </div>
-
-        <!-- Inbox Section -->
-        <div id="inboxSection" class="hidden pb-20 bg-white min-h-screen">
-            <h2 class="p-4 font-bold text-xl border-b">Chats</h2>
-            <div id="chatUserList"></div>
-        </div>
-
-        <!-- Profile Section -->
-        <div id="profileSection" class="hidden pb-20 bg-white min-h-screen">
-            <div class="relative h-40 bg-gray-300">
-                <img id="profileCover" src="" class="w-full h-full object-cover">
-                <img id="profilePfp" src="" class="absolute -bottom-10 left-4 w-24 h-24 rounded-full border-4 border-white bg-white object-cover">
-            </div>
-            <div class="mt-12 px-4">
-                <h2 class="text-2xl font-bold" id="pNameDisp"></h2>
-                <p id="pBio" class="text-gray-600 text-sm my-1"></p>
-                <div id="profileActionArea" class="mt-3 flex gap-2"></div>
-            </div>
-            <div class="mt-4 border-t" id="profilePosts"></div>
         </div>
     </div>
 
-    <!-- Modals -->
-    <!-- Chat Modal -->
-    <div id="chatModal" class="fixed inset-0 bg-white z-[200] hidden flex flex-col">
-        <div class="flex items-center gap-3 p-3 border-b bg-white shadow-sm">
-            <i onclick="closeChat()" class="fas fa-arrow-left text-xl p-2"></i>
-            <h3 id="chatUserName" class="font-bold">Chat</h3>
-        </div>
-        <div id="chatBox" class="flex-1 overflow-y-auto p-3 flex flex-col bg-gray-50"></div>
-        <div class="p-2 border-t flex gap-2 bg-white">
-            <input type="text" id="msgInput" class="flex-1 bg-gray-100 p-2 rounded-full px-4 outline-none">
-            <button onclick="sendMsg()" class="text-blue-600 px-3"><i class="fas fa-paper-plane text-xl"></i></button>
-        </div>
-    </div>
-
-    <!-- Post Modal (Optimized) -->
+    <!-- Post Modal -->
     <div id="postModal" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
-        <div class="flex justify-between items-center p-3 border-b">
-            <div class="flex items-center gap-2"><i onclick="closePostModal()" class="fas fa-times text-xl"></i> <span class="font-bold">Create Post</span></div>
-            <button onclick="processAndPost()" class="bg-blue-600 text-white px-5 py-1 rounded font-bold text-sm disabled:bg-gray-400" id="postBtn">POST</button>
+        <div class="flex justify-between items-center p-3 border-b shadow-sm">
+            <div class="flex items-center gap-2"><i onclick="document.getElementById('postModal').classList.add('hidden')" class="fas fa-times text-xl p-2"></i> <span class="font-bold">New Post</span></div>
+            <button onclick="submitPost()" id="postBtn" class="bg-blue-600 text-white px-6 py-1.5 rounded font-bold text-sm">POST</button>
         </div>
         <textarea id="pText" class="w-full p-4 text-lg outline-none flex-1 resize-none" placeholder="What's on your mind?"></textarea>
-        <div id="pImgArea" class="hidden p-2 relative bg-gray-100 text-center">
-            <img id="pImgPreview" class="max-h-60 mx-auto object-contain">
-            <i onclick="clearPostImage()" class="fas fa-times-circle absolute top-2 right-2 text-2xl text-red-500 bg-white rounded-full"></i>
+        <div id="pImgArea" class="hidden p-2 relative bg-gray-50 border-t">
+            <img id="pImgPreview" class="h-40 mx-auto object-contain">
+            <button onclick="clearImg()" class="absolute top-2 right-2 text-red-500 bg-white rounded-full p-1 shadow">Remove</button>
         </div>
-        <div class="p-3 border-t">
-            <label for="pImgInput" class="flex items-center gap-2 text-green-600 font-bold p-2 cursor-pointer bg-green-50 rounded-lg w-fit">
+        <div class="p-3 border-t bg-gray-50">
+            <label class="flex items-center gap-2 text-green-600 font-bold cursor-pointer">
                 <i class="fas fa-image text-xl"></i> Add Photo
+                <input type="file" id="pImgInput" class="hidden" accept="image/*" onchange="previewFile(this)">
             </label>
-            <input type="file" id="pImgInput" class="hidden" accept="image/*" onchange="previewFile(this)">
-        </div>
-    </div>
-
-    <!-- Edit Profile Modal -->
-    <div id="editProfileModal" class="fixed inset-0 bg-black/50 z-[150] hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full rounded p-5">
-            <h3 class="font-bold mb-2">Edit Profile</h3>
-            <input type="text" id="editBio" class="w-full border p-2 mb-2 rounded" placeholder="Bio">
-            <input type="text" id="editPfp" class="w-full border p-2 mb-2 rounded" placeholder="Profile Pic URL">
-            <input type="text" id="editCover" class="w-full border p-2 mb-4 rounded" placeholder="Cover Pic URL">
-            <div class="flex justify-end gap-2">
-                <button onclick="document.getElementById('editProfileModal').classList.add('hidden')" class="px-4 py-2 text-gray-500">Cancel</button>
-                <button onclick="saveProfile()" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
-            </div>
         </div>
     </div>
 
@@ -163,36 +104,123 @@
             appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
         };
 
-        try { firebase.initializeApp(firebaseConfig); } catch(e) {}
-        const db = firebase.database();
-        let user = JSON.parse(localStorage.getItem('fcb_user'));
-        let activeChat = null;
-
-        const sanitize = (str) => {
-            const d = document.createElement('div');
-            d.textContent = str;
-            return d.innerHTML;
-        };
-
-        if(user) initApp();
-        else document.getElementById('authPage').classList.remove('hidden');
-
-        function initApp() {
-            document.getElementById('authPage').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('myAvatar').src = user.pfp;
-            
-            db.ref('posts').limitToLast(15).on('value', snap => {
-                const list = document.getElementById('feedList');
-                list.innerHTML = '';
-                if(!snap.exists()) { list.innerHTML = '<div class="text-center p-5 text-gray-400">No posts yet</div>'; return; }
-                const ps = [];
-                snap.forEach(c => ps.push({k: c.key, ...c.val()}));
-                ps.reverse().forEach(p => list.innerHTML += renderPost(p));
-            });
+        // Initialize Firebase safely
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log("Firebase Connected");
+        } catch (e) {
+            alert("Internet Error: Firebase failed to load. Please refresh.");
+            console.error(e);
         }
 
-        // --- Optimized Upload Logic ---
+        // Check Login Status
+        let user = null;
+        try {
+            user = JSON.parse(localStorage.getItem('fcb_user_safe'));
+        } catch(e) { localStorage.removeItem('fcb_user_safe'); }
+
+        if (user) {
+            showMainApp();
+        } else {
+            document.getElementById('authPage').classList.remove('hidden');
+        }
+
+        // --- AUTH FUNCTIONS ---
+        function handleAuth(type) {
+            const btn = document.getElementById(type === 'login' ? 'btnLogin' : 'btnSignup');
+            const status = document.getElementById('statusMsg');
+            const uInput = document.getElementById(type === 'login' ? 'lUser' : 'rUser');
+            const pInput = document.getElementById(type === 'login' ? 'lPass' : 'rPass');
+            
+            const u = uInput.value.trim().toLowerCase().replace(/\s/g, '');
+            const p = pInput.value.trim();
+
+            if (!u || !p) {
+                status.innerText = "Please enter both Username and Password";
+                return;
+            }
+
+            // Visual Feedback
+            const originalText = btn.innerText;
+            btn.innerText = type === 'login' ? "Checking..." : "Creating Account...";
+            btn.classList.add('btn-loading');
+            btn.disabled = true;
+            status.innerText = "";
+
+            if(!db) { alert("Database not connected. Check internet."); restoreBtn(); return; }
+
+            const ref = db.ref('users/' + u);
+
+            if (type === 'signup') {
+                ref.once('value', s => {
+                    if (s.exists()) {
+                        status.innerText = "Username already taken!";
+                        restoreBtn();
+                    } else {
+                        const data = { name: u, pass: p, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", joined: Date.now() };
+                        ref.set(data).then(() => {
+                            localStorage.setItem('fcb_user_safe', JSON.stringify(data));
+                            location.reload();
+                        }).catch(e => {
+                            status.innerText = "Error: " + e.message;
+                            restoreBtn();
+                        });
+                    }
+                });
+            } else {
+                ref.once('value', s => {
+                    const val = s.val();
+                    if (val && val.pass === p) {
+                        localStorage.setItem('fcb_user_safe', JSON.stringify(val));
+                        location.reload();
+                    } else {
+                        status.innerText = "Wrong Username or Password!";
+                        restoreBtn();
+                    }
+                }, error => {
+                    status.innerText = "Network Error. Check internet.";
+                    restoreBtn();
+                });
+            }
+
+            function restoreBtn() {
+                btn.innerText = originalText;
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+            }
+        }
+
+        function toggleAuth(type) {
+            document.getElementById('loginBox').classList.toggle('hidden', type === 'signup');
+            document.getElementById('signupBox').classList.toggle('hidden', type === 'login');
+            document.getElementById('statusMsg').innerText = "";
+        }
+
+        function showMainApp() {
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            loadFeed();
+        }
+
+        function logout() {
+            if(confirm("Log out?")) {
+                localStorage.removeItem('fcb_user_safe');
+                location.reload();
+            }
+        }
+
+        function resetApp() {
+            if(confirm("This will clear app data and refresh. OK?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // --- POSTING & ImgBB ---
+        function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
+        
         function previewFile(input) {
             const file = input.files[0];
             if(file) {
@@ -200,66 +228,56 @@
                 document.getElementById('pImgPreview').src = URL.createObjectURL(file);
             }
         }
-
-        function clearPostImage() {
+        function clearImg() {
             document.getElementById('pImgArea').classList.add('hidden');
             document.getElementById('pImgInput').value = '';
         }
 
-        // MAGIC FUNCTION: Compress & Upload
-        async function processAndPost() {
+        async function submitPost() {
             const btn = document.getElementById('postBtn');
             const txt = document.getElementById('pText').value.trim();
-            const fileInput = document.getElementById('pImgInput');
-            const file = fileInput.files[0];
+            const file = document.getElementById('pImgInput').files[0];
 
-            if(!txt && !file) return alert("Please write something or add photo");
+            if(!txt && !file) return alert("Write something!");
 
+            btn.innerText = "Processing...";
             btn.disabled = true;
-            btn.innerText = "wait...";
 
-            let finalImgUrl = null;
+            let imgUrl = null;
 
             if(file) {
-                btn.innerText = "compressing...";
+                btn.innerText = "Uploading Img...";
                 try {
-                    // 1. Resize Image using Canvas
+                    // Resize Image Logic (Canvas)
                     const resizedBlob = await resizeImage(file);
-                    btn.innerText = "uploading...";
-                    
-                    // 2. Upload to ImgBB
                     const formData = new FormData();
                     formData.append('image', resizedBlob);
                     
                     const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                     const data = await res.json();
                     
-                    if(data.success) finalImgUrl = data.data.url;
+                    if(data.success) imgUrl = data.data.url;
                     else throw new Error("Upload failed");
-                    
                 } catch(e) {
-                    alert("Image upload failed! Check internet.");
-                    btn.disabled = false;
+                    alert("Image upload failed. Try again.");
                     btn.innerText = "POST";
+                    btn.disabled = false;
                     return;
                 }
             }
 
-            btn.innerText = "publishing...";
+            btn.innerText = "Publishing...";
             db.ref('posts').push({
                 uName: user.name,
-                uPfp: user.pfp,
-                content: sanitize(txt),
-                image: finalImgUrl,
-                time: Date.now(),
-                likes: 0
+                content: txt,
+                image: imgUrl,
+                time: Date.now()
             }).then(() => {
-                closePostModal();
+                document.getElementById('postModal').classList.add('hidden');
                 document.getElementById('pText').value = '';
-                clearPostImage();
-                btn.disabled = false;
+                clearImg();
                 btn.innerText = "POST";
-                showSection('feed');
+                btn.disabled = false;
             });
         }
 
@@ -273,159 +291,37 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        const maxWidth = 600; // Force resize to 600px width
+                        const maxWidth = 800; 
                         const scale = maxWidth / img.width;
                         canvas.width = maxWidth;
                         canvas.height = img.height * scale;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob(resolve, 'image/jpeg', 0.6); // Compress Quality 60%
+                        canvas.toBlob(resolve, 'image/jpeg', 0.7);
                     };
                 };
             });
         }
 
-        // --- UI Renders ---
-        function renderPost(p) {
-            const isMe = p.uName === user.name;
-            return `
-            <div class="post-card bg-white p-3">
-                <div class="flex justify-between">
-                    <div class="flex gap-2 items-center" onclick="viewProfile('${p.uName}')">
-                        <img src="${p.uPfp}" class="w-10 h-10 rounded-full border bg-gray-200 object-cover">
-                        <div>
-                            <div class="font-bold text-sm">${sanitize(p.uName)}</div>
-                            <div class="text-xs text-gray-500">${new Date(p.time).toLocaleTimeString()}</div>
-                        </div>
-                    </div>
-                    ${isMe ? `<i onclick="db.ref('posts/${p.k}').remove()" class="fas fa-trash text-gray-300 p-2"></i>` : ''}
-                </div>
-                <div class="my-2 text-sm whitespace-pre-wrap">${p.content}</div>
-                ${p.image ? `<img src="${p.image}" class="w-full object-contain bg-gray-50 max-h-[400px] mb-2">` : ''}
-                <div class="flex gap-4 pt-2 border-t text-gray-500 font-bold text-sm">
-                    <div onclick="db.ref('posts/${p.k}/likes').transaction(x=> (x||0)+1)" class="cursor-pointer"><i class="far fa-thumbs-up"></i> Like (${p.likes||0})</div>
-                    <div class="cursor-pointer">Comment</div>
-                </div>
-            </div>`;
-        }
-
-        // --- Basic Functions ---
-        function handleAuth(type) {
-            const u = document.getElementById(type === 'login' ? 'lUser' : 'rUser').value.toLowerCase().replace(/\s/g,'');
-            const p = document.getElementById(type === 'login' ? 'lPass' : 'rPass').value;
-            if(!u || !p) return alert("Fill all fields");
-            
-            const ref = db.ref('users/' + u);
-            if(type === 'signup') {
-                ref.once('value', s => {
-                    if(s.exists()) return alert("User exists");
-                    const d = { name: u, pass: p, pfp: "https://via.placeholder.com/150", bio: "Hi!", joined: Date.now() };
-                    ref.set(d).then(() => { localStorage.setItem('fcb_user', JSON.stringify(d)); location.reload(); });
-                });
-            } else {
-                ref.once('value', s => {
-                    const d = s.val();
-                    if(d && d.pass === p) { localStorage.setItem('fcb_user', JSON.stringify(d)); location.reload(); }
-                    else alert("Wrong credentials");
-                });
-            }
-        }
-        function toggleAuth(t) {
-            document.getElementById('loginBox').classList.toggle('hidden', t==='signup');
-            document.getElementById('signupBox').classList.toggle('hidden', t==='login');
-        }
-        function logout() { localStorage.removeItem('fcb_user'); location.reload(); }
-        
-        function showSection(id) {
-            ['feed','inbox','profile'].forEach(i => {
-                document.getElementById(i+'Section').classList.add('hidden');
-                document.getElementById('ic-'+i).classList.remove('active-nav');
-            });
-            document.getElementById(id+'Section').classList.remove('hidden');
-            document.getElementById('ic-'+id).classList.add('active-nav');
-        }
-
-        // --- Profile & Search ---
-        function viewProfile(name) {
-            showSection('profile');
-            db.ref('users/'+name).on('value', s => {
-                const d = s.val();
-                document.getElementById('pNameDisp').innerText = d.name;
-                document.getElementById('pBio').innerText = d.bio;
-                document.getElementById('profilePfp').src = d.pfp;
-                document.getElementById('profileCover').src = d.cover || "https://via.placeholder.com/800x400";
+        function loadFeed() {
+            db.ref('posts').limitToLast(20).on('value', snap => {
+                const list = document.getElementById('feedList');
+                list.innerHTML = '';
+                if(!snap.exists()) { list.innerHTML = '<div class="text-center text-gray-400">No posts yet.</div>'; return; }
                 
-                const isMe = name === user.name;
-                document.getElementById('profileActionArea').innerHTML = isMe ? 
-                `<button onclick="document.getElementById('editProfileModal').classList.remove('hidden')" class="bg-gray-200 px-4 py-1 rounded font-bold text-sm w-full">Edit Profile</button>` : 
-                `<button onclick="openChat('${d.name}')" class="bg-blue-600 text-white px-4 py-1 rounded font-bold text-sm w-full">Message</button>`;
+                const posts = [];
+                snap.forEach(c => posts.push(c.val()));
                 
-                db.ref('posts').orderByChild('uName').equalTo(name).limitToLast(10).once('value', s => {
-                    const div = document.getElementById('profilePosts');
-                    div.innerHTML = '';
-                    if(s.exists()) {
-                        const ps = []; s.forEach(c => ps.push({k: c.key, ...c.val()}));
-                        ps.reverse().forEach(p => div.innerHTML += renderPost(p));
-                    }
+                posts.reverse().forEach(p => {
+                    list.innerHTML += `
+                    <div class="bg-white p-3 rounded shadow-sm">
+                        <div class="font-bold text-blue-600 mb-1">${p.uName}</div>
+                        <div class="mb-2 whitespace-pre-wrap">${p.content}</div>
+                        ${p.image ? `<img src="${p.image}" class="w-full rounded max-h-80 object-cover bg-gray-100">` : ''}
+                        <div class="text-xs text-gray-400 mt-2">${new Date(p.time).toLocaleString()}</div>
+                    </div>`;
                 });
             });
         }
-        function saveProfile() {
-            const bio = document.getElementById('editBio').value;
-            const pfp = document.getElementById('editPfp').value;
-            const cover = document.getElementById('editCover').value;
-            db.ref('users/'+user.name).update({bio, pfp, cover}).then(()=>{
-                user.pfp = pfp; localStorage.setItem('fcb_user', JSON.stringify(user));
-                document.getElementById('editProfileModal').classList.add('hidden');
-            });
-        }
-        function toggleSearch() { document.getElementById('searchBar').classList.toggle('hidden'); }
-        function searchUsers() {
-            const q = document.getElementById('userSearchInput').value.toLowerCase();
-            const res = document.getElementById('searchResults');
-            res.innerHTML = '';
-            if(!q) return;
-            db.ref('users').orderByKey().startAt(q).endAt(q+"\uf8ff").limitToFirst(5).once('value', s => {
-                s.forEach(u => {
-                    res.innerHTML += `<div onclick="viewProfile('${u.key}');toggleSearch()" class="p-2 border-b flex items-center gap-2 font-bold"><img src="${u.val().pfp}" class="w-8 h-8 rounded-full">${u.key}</div>`;
-                });
-            });
-        }
-
-        // --- Chat ---
-        function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
-        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
-        function openChat(name) {
-            activeChat = name;
-            document.getElementById('chatModal').classList.remove('hidden');
-            document.getElementById('chatUserName').innerText = name;
-            loadMsgs();
-        }
-        function closeChat() { document.getElementById('chatModal').classList.add('hidden'); activeChat=null; }
-        function sendMsg() {
-            const t = document.getElementById('msgInput').value;
-            if(!t || !activeChat) return;
-            const id = [user.name, activeChat].sort().join('_');
-            db.ref('messages/'+id).push({s: user.name, t: sanitize(t), time: Date.now()});
-            document.getElementById('msgInput').value = '';
-        }
-        function loadMsgs() {
-            const id = [user.name, activeChat].sort().join('_');
-            const box = document.getElementById('chatBox');
-            box.innerHTML = '';
-            db.ref('messages/'+id).limitToLast(20).on('child_added', s => {
-                const d = s.val();
-                box.innerHTML += `<div class="chat-bubble ${d.s===user.name?'my-msg':'their-msg'}">${d.t}</div>`;
-                box.scrollTop = box.scrollHeight;
-            });
-        }
-        // Inbox List
-        db.ref('users').limitToFirst(10).once('value', s => {
-            s.forEach(u => {
-                if(u.key !== user.name) document.getElementById('chatUserList').innerHTML += 
-                `<div onclick="openChat('${u.key}')" class="p-3 border-b flex items-center gap-3 font-bold"><img src="${u.val().pfp}" class="w-10 h-10 rounded-full bg-gray-200">${u.key}</div>`;
-            });
-        });
-
     </script>
 </body>
 </html>
