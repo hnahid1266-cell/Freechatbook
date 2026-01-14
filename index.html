@@ -2,99 +2,164 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Freechatbook - Ultimate Hybrid</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freechatbook - Final Version</title>
     
-    <!-- Stable Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-app.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-database.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        body { background-color: #f0f2f5; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
         .hidden { display: none !important; }
-        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #0866FF; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
+        .post-card { background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 15px; animation: fadeIn 0.3s; }
+        .active-nav { color: #0866FF !important; }
+        .verify-badge { color: #0866FF; font-size: 13px; margin-left: 4px; }
+        .time-text { font-size: 10px; color: #65676b; margin-top: -2px; }
+        .chat-me { background: #0866FF; color: white; border-radius: 18px 18px 0 18px; padding: 8px 12px; align-self: flex-end; max-width: 75%; font-size: 14px; word-wrap: break-word; }
+        .chat-other { background: #e4e6eb; color: black; border-radius: 18px 18px 18px 0; padding: 8px 12px; align-self: flex-start; max-width: 75%; font-size: 14px; word-wrap: break-word; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Loader */
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 2s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .btn-disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
-        .post-img-bg { background-color: #e4e6eb; min-height: 200px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <!-- 1. AUTH PAGE -->
-    <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6">
-        <h1 class="text-[#0866FF] text-4xl font-black italic mb-2">freechatbook</h1>
-        <p class="text-xs text-gray-400 mb-8">Fast Hybrid Version</p>
+    <!-- Auth Page -->
+    <div id="authPage" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center p-6 overflow-y-auto">
+        <h1 class="text-[#0866FF] text-5xl font-black italic mb-8 tracking-tighter">freechatbook</h1>
         
-        <div id="loginBox" class="w-full max-w-sm space-y-3">
-            <input type="text" id="lUser" placeholder="Username" class="w-full border p-3 rounded bg-gray-50 outline-blue-500">
-            <input type="password" id="lPass" placeholder="Password" class="w-full border p-3 rounded bg-gray-50 outline-blue-500">
-            <button onclick="handleAuth('login')" id="btnLogin" class="w-full bg-[#0866FF] text-white py-3 rounded font-bold text-lg hover:bg-blue-700 transition">Log In</button>
-            <div class="text-center pt-2"><span onclick="toggleAuth('signup')" class="text-green-600 font-bold cursor-pointer">Create New Account</span></div>
+        <div id="loginBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-lg bg-white">
+            <h2 class="font-bold mb-4 text-center text-xl text-gray-700">লগইন করুন</h2>
+            <input type="text" id="lUser" placeholder="ইউজারনাম (English)" class="w-full border p-3 rounded-lg mb-3 outline-none focus:border-blue-500 bg-gray-50">
+            <input type="password" id="lPass" placeholder="পাসওয়ার্ড" class="w-full border p-3 rounded-lg mb-4 outline-none focus:border-blue-500 bg-gray-50">
+            <button onclick="handleAuth('login')" class="w-full bg-[#0866FF] text-white py-3 rounded-lg font-bold mb-3 hover:bg-blue-700 transition">Login</button>
+            <p class="text-center text-sm text-gray-600">একাউন্ট নেই? <span onclick="toggleAuth('signup')" class="text-blue-600 cursor-pointer font-bold hover:underline">নতুন একাউন্ট তৈরি করুন</span></p>
         </div>
 
-        <div id="signupBox" class="w-full max-w-sm space-y-3 hidden">
-            <input type="text" id="rUser" placeholder="New Username (lowercase)" class="w-full border p-3 rounded bg-gray-50 outline-green-500">
-            <input type="password" id="rPass" placeholder="New Password" class="w-full border p-3 rounded bg-gray-50 outline-green-500">
-            <button onclick="handleAuth('signup')" id="btnSignup" class="w-full bg-[#42b72a] text-white py-3 rounded font-bold text-lg hover:bg-green-700 transition">Sign Up</button>
-            <div class="text-center pt-2"><span onclick="toggleAuth('login')" class="text-blue-600 font-bold cursor-pointer">Back to Login</span></div>
+        <div id="signupBox" class="w-full max-w-sm border p-6 rounded-2xl shadow-lg bg-white hidden">
+            <h2 class="font-bold mb-4 text-center text-green-600 text-xl">নতুন একাউন্ট</h2>
+            <input type="text" id="rUser" placeholder="ইউজারনাম (ছোট হাতের ইংরেজিতে)" class="w-full border p-3 rounded-lg mb-3 outline-none focus:border-green-500 bg-gray-50">
+            <input type="password" id="rPass" placeholder="গোপন পাসওয়ার্ড দিন" class="w-full border p-3 rounded-lg mb-4 outline-none focus:border-green-500 bg-gray-50">
+            <button onclick="handleAuth('signup')" class="w-full bg-[#42b72a] text-white py-3 rounded-lg font-bold mb-3 hover:bg-green-700 transition">Sign Up</button>
+            <p class="text-center text-sm text-gray-600">আগে থেকেই একাউন্ট আছে? <span onclick="toggleAuth('login')" class="text-blue-600 cursor-pointer font-bold hover:underline">লগইন করুন</span></p>
         </div>
-        
-        <div id="statusMsg" class="mt-4 text-center text-sm font-bold text-red-500 min-h-[20px]"></div>
-        <button onclick="hardReset()" class="absolute bottom-5 text-gray-400 text-xs underline">App Freezing? Click to Reset</button>
     </div>
 
-    <!-- 2. MAIN APP -->
-    <div id="mainApp" class="hidden max-w-md mx-auto bg-gray-100 min-h-screen pb-20">
-        <!-- Navbar -->
-        <nav class="bg-white sticky top-0 z-50 px-4 py-3 shadow-sm flex justify-between items-center">
-            <h1 class="text-[#0866FF] text-2xl font-black italic cursor-pointer" onclick="location.reload()">freechatbook</h1>
-            <div class="flex gap-4">
-                <i onclick="location.reload()" class="fas fa-sync text-gray-500"></i>
-                <i onclick="logout()" class="fas fa-power-off text-red-500"></i>
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Top Nav -->
+        <nav class="bg-white sticky top-0 border-b shadow-sm flex justify-between items-center px-4 py-2 z-40 h-14">
+            <h1 class="text-[#0866FF] text-2xl font-black italic cursor-pointer" onclick="showSection('feed')">Freechatbook</h1>
+            <div class="flex items-center gap-3">
+                <div onclick="showSection('inbox')" class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                    <i class="fas fa-comment-dots text-gray-600"></i>
+                </div>
+                <img id="navPfp" onclick="viewProfile(user.name)" src="" class="w-9 h-9 rounded-full border border-gray-300 object-cover cursor-pointer">
             </div>
         </nav>
 
-        <!-- Post Input Trigger -->
-        <div class="bg-white p-3 m-2 rounded shadow-sm flex gap-2 items-center cursor-pointer hover:bg-gray-50 transition" onclick="openPostModal()">
-            <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden"><img id="myAvatar" class="w-full h-full object-cover"></div>
-            <div class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-gray-500 text-sm">Write something...</div>
+        <div class="max-w-xl mx-auto p-0 pb-20 md:p-4">
+            
+            <!-- Feed Section -->
+            <div id="feedSection">
+                <div class="bg-white p-4 mb-3 flex gap-3 items-center shadow-sm md:rounded-lg">
+                    <img id="writePostPfp" src="" class="w-10 h-10 rounded-full object-cover">
+                    <div onclick="openPostModal()" class="bg-gray-100 flex-1 rounded-full px-4 py-2 text-gray-500 cursor-pointer hover:bg-gray-200 transition">
+                        কি ভাবছেন, <span id="writePostName"></span>?
+                    </div>
+                </div>
+                <div id="feedList" class="md:px-0 px-2"></div>
+            </div>
+
+            <!-- Inbox Section -->
+            <div id="inboxSection" class="hidden px-2 md:px-0">
+                <h2 class="font-bold my-4 text-xl px-2">মেসেঞ্জর</h2>
+                <div id="chatUserList" class="space-y-2"></div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profileSection" class="hidden px-2 md:px-0 mt-2">
+                <div class="bg-white p-6 rounded-2xl text-center shadow-sm relative border">
+                    <div class="relative inline-block">
+                        <img id="profilePfp" src="" class="w-32 h-32 rounded-full mx-auto border-4 border-white shadow-md object-cover">
+                        <div id="editPfpBtn" onclick="document.getElementById('editPfpInput').click()" class="hidden absolute bottom-2 right-2 bg-gray-200 p-2 rounded-full cursor-pointer hover:bg-gray-300">
+                            <i class="fas fa-camera text-gray-700"></i>
+                        </div>
+                        <input type="file" id="editPfpInput" class="hidden" accept="image/*" onchange="uploadProfilePic(this)">
+                    </div>
+                    
+                    <h2 id="pNameDisp" class="text-2xl font-bold mt-4 flex justify-center items-center gap-1"></h2>
+                    <p id="fCountDisp" class="text-gray-500 font-medium text-sm mt-1 mb-4">0 Followers</p>
+                    
+                    <div id="profileActionArea" class="flex justify-center gap-2">
+                        <!-- Buttons injected by JS -->
+                    </div>
+                </div>
+                <div class="mt-4 p-4 text-center text-gray-400 text-sm">
+                    User Since: <span id="joinDate">Loading...</span>
+                </div>
+            </div>
         </div>
 
-        <!-- Feed List -->
-        <div id="feedList" class="flex flex-col gap-2 px-2">
-            <div class="text-center py-10 text-gray-500">Loading feed...</div>
+        <!-- Bottom Nav -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-14 z-40 pb-safe">
+            <i onclick="showSection('feed')" class="fas fa-home text-2xl text-gray-400 cursor-pointer hover:text-blue-500 p-2" id="ic-feed"></i>
+            <i onclick="showSection('inbox')" class="fab fa-facebook-messenger text-2xl text-gray-400 cursor-pointer hover:text-blue-500 p-2" id="ic-inbox"></i>
+            <div onclick="openPostModal()" class="text-blue-600 -mt-6 bg-white p-1 rounded-full border shadow-sm cursor-pointer">
+                <i class="fas fa-plus-circle text-5xl"></i>
+            </div>
+            <i onclick="alert('নোটিফিকেশন ফিচার শীঘ্রই আসছে!')" class="fas fa-bell text-2xl text-gray-400 cursor-pointer hover:text-blue-500 p-2"></i>
+            <i onclick="viewProfile(user.name)" class="fas fa-user text-2xl text-gray-400 cursor-pointer hover:text-blue-500 p-2" id="ic-profile"></i>
         </div>
     </div>
 
-    <!-- 3. POST MODAL -->
-    <div id="postModal" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
-        <div class="flex justify-between items-center p-3 border-b shadow-sm">
-            <button onclick="closePostModal()" class="text-2xl text-gray-600 px-2">&times;</button>
-            <span class="font-bold">Create Post</span>
-            <button onclick="submitPost()" id="btnPost" class="bg-blue-600 text-white px-5 py-1.5 rounded font-bold text-sm shadow-sm">POST</button>
+    <!-- Chat Window -->
+    <div id="chatWin" class="fixed inset-0 bg-white z-[1000] hidden flex flex-col">
+        <div class="p-2 border-b flex items-center gap-3 shadow-sm bg-white">
+            <i onclick="closeChat()" class="fas fa-arrow-left cursor-pointer text-blue-600 p-2 text-xl"></i>
+            <img id="cUserPfp" src="" class="w-9 h-9 rounded-full object-cover border">
+            <span id="cUserName" class="font-bold text-lg"></span>
         </div>
-        
-        <textarea id="pText" class="w-full p-4 text-lg outline-none flex-1 resize-none" placeholder="What's on your mind?"></textarea>
-        
-        <div id="pImgArea" class="hidden p-2 relative bg-gray-50 border-t">
-            <img id="pImgPreview" class="h-40 mx-auto object-contain">
-            <button onclick="clearImg()" class="absolute top-2 right-2 text-red-500 bg-white rounded-full p-1 px-3 shadow font-bold text-xs">Remove</button>
+        <div id="cBox" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 bg-white"></div>
+        <div class="p-3 border-t flex gap-2 items-center bg-gray-50 pb-safe">
+            <input id="cInput" type="text" class="flex-1 bg-white rounded-full px-4 py-2 outline-none border focus:border-blue-500" placeholder="মেসেজ লিখুন...">
+            <button onclick="sendMsg()" class="text-blue-600 p-2 hover:bg-blue-50 rounded-full transition"><i class="fas fa-paper-plane text-xl"></i></button>
         </div>
-        
-        <div class="p-3 border-t bg-gray-50">
-            <label class="flex items-center gap-2 text-green-600 font-bold cursor-pointer w-fit p-2 rounded hover:bg-green-50">
-                <i class="fas fa-image text-xl"></i> Add Photo
-                <input type="file" id="pImgInput" class="hidden" accept="image/*" onchange="previewFile(this)">
-            </label>
+    </div>
+
+    <!-- Post Modal -->
+    <div id="postModal" class="fixed inset-0 bg-black/60 z-[200] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md p-5 rounded-2xl shadow-2xl animate-[fadeIn_0.2s]">
+            <div class="flex justify-between mb-4 font-bold text-lg border-b pb-2">পোস্ট তৈরি করুন <i onclick="closePostModal()" class="fas fa-times cursor-pointer text-gray-500 bg-gray-100 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200"></i></div>
+            <div class="flex gap-2 mb-3">
+                <img id="modalPfp" src="" class="w-10 h-10 rounded-full object-cover">
+                <div>
+                    <h4 id="modalName" class="font-bold text-sm"></h4>
+                    <span class="text-xs bg-gray-200 px-2 rounded font-bold text-gray-600">Public</span>
+                </div>
+            </div>
+            <textarea id="pText" class="w-full text-lg placeholder-gray-500 outline-none mb-3 h-24 resize-none" placeholder="আপনার মনে কি আছে?"></textarea>
+            
+            <div id="previewArea" class="hidden mb-3 relative">
+                <img id="imgPreview" class="w-full rounded-lg max-h-48 object-cover">
+                <button onclick="clearImage()" class="absolute top-1 right-1 bg-white rounded-full p-1 shadow"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="border rounded-lg p-3 mb-4 flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="document.getElementById('pImage').click()">
+                <span class="font-bold text-sm text-gray-600">ছবি যুক্ত করুন</span>
+                <i class="fas fa-images text-green-500 text-xl"></i>
+            </div>
+            <input type="file" id="pImage" accept="image/*" class="hidden" onchange="previewImage(this)">
+            
+            <button id="postBtn" onclick="submitPost()" class="w-full bg-[#0866FF] text-white py-2 rounded-lg font-bold disabled:opacity-50 transition">পোস্ট করুন</button>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        const IMGBB_API_KEY = "3d8496a83cf59cbff6ea657e72fa8688";
-        
+        // Firebase Config (একই রাখা হয়েছে)
         const firebaseConfig = {
             apiKey: "AIzaSyDlrDXIji286w0wBPqta0mftEhPxS3M9BM",
             authDomain: "freechatbook-42f04.firebaseapp.com",
@@ -104,276 +169,360 @@
             messagingSenderId: "784680329144",
             appId: "1:784680329144:web:ccacf6e9d71fd25772394d"
         };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        let user = JSON.parse(localStorage.getItem('freechatbook_user'));
 
-        // --- INIT ---
-        let db;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-        } catch (e) { console.error("Firebase init error", e); }
-
-        let user = null;
-        try { user = JSON.parse(localStorage.getItem('fcb_hybrid_user')); } catch(e) {}
-
-        if (user) {
-            initApp();
-        } else {
-            document.getElementById('authPage').classList.remove('hidden');
+        // --- Utility Functions ---
+        // XSS Prevention: টেক্সট নিরাপদ করা
+        function escapeHtml(text) {
+            if (!text) return text;
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        function initApp() {
-            document.getElementById('authPage').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('myAvatar').src = user.pfp || "https://via.placeholder.com/50";
-            loadFeed();
+        // Image Compression: ছবি ছোট করা (Database এর লোড কমানোর জন্য)
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    // Max width 600px
+                    const scaleFactor = 600 / img.width;
+                    canvas.width = 600;
+                    canvas.height = img.height * scaleFactor;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    // Quality 0.7 (JPEG)
+                    callback(canvas.toDataURL('image/jpeg', 0.7)); 
+                }
+            }
         }
 
-        // --- AUTH LOGIC (Anti-Freeze) ---
+        // --- Auth System ---
+        function toggleAuth(type) {
+            document.getElementById('loginBox').classList.toggle('hidden', type === 'signup');
+            document.getElementById('signupBox').classList.toggle('hidden', type === 'login');
+        }
+
         function handleAuth(type) {
-            const btn = document.getElementById(type === 'login' ? 'btnLogin' : 'btnSignup');
-            const status = document.getElementById('statusMsg');
             const u = document.getElementById(type === 'login' ? 'lUser' : 'rUser').value.trim().toLowerCase().replace(/\s/g, '');
             const p = document.getElementById(type === 'login' ? 'lPass' : 'rPass').value.trim();
+            if(!u || !p) return alert("দয়া করে সব তথ্য দিন");
 
-            if (!u || !p) return status.innerText = "Please fill all fields";
-
-            // Set Loading State
-            const oldText = btn.innerText;
-            btn.innerHTML = `<div class="spinner border-white"></div> Checking...`;
-            btn.classList.add('btn-disabled');
-            status.innerText = "";
-
-            if (!db) {
-                alert("Database connection failed. Please check internet.");
-                resetBtn(); return;
-            }
-
-            const ref = db.ref('users/' + u);
-
-            if (type === 'signup') {
-                ref.once('value', s => {
-                    if (s.exists()) {
-                        status.innerText = "Username taken!";
-                        resetBtn();
-                    } else {
-                        const data = { name: u, pass: p, pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", joined: Date.now() };
-                        ref.set(data).then(() => successLogin(data)).catch(e => { status.innerText = e.message; resetBtn(); });
-                    }
+            if(type === 'signup') {
+                if(u.length < 3) return alert("ইউজারনাম অন্তত ৩ অক্ষরের হতে হবে");
+                db.ref('users/' + u).once('value', s => {
+                    if(s.exists()) return alert("এই ইউজারনাম আগেই নেওয়া হয়েছে। অন্য নাম দিন।");
+                    const data = { 
+                        name: u, 
+                        pass: p, 
+                        pfp: "https://cdn-icons-png.flaticon.com/512/149/149071.png", 
+                        followers: 0,
+                        joined: Date.now()
+                    };
+                    db.ref('users/' + u).set(data).then(() => { 
+                        alert("একাউন্ট তৈরি সফল! এখন লগইন করুন।"); 
+                        toggleAuth('login'); 
+                    });
                 });
             } else {
-                ref.once('value', s => {
-                    const val = s.val();
-                    if (val && val.pass === p) {
-                        successLogin(val);
-                    } else {
-                        status.innerText = "Wrong credentials!";
-                        resetBtn();
-                    }
-                }).catch(() => {
-                    status.innerText = "Network Error!";
-                    resetBtn();
+                db.ref('users/' + u).once('value', s => {
+                    const d = s.val();
+                    if(d && d.pass === p) { 
+                        localStorage.setItem('freechatbook_user', JSON.stringify(d)); 
+                        location.reload(); 
+                    } else alert("ইউজারনাম বা পাসওয়ার্ড ভুল!");
                 });
             }
-
-            function resetBtn() {
-                btn.innerText = oldText;
-                btn.classList.remove('btn-disabled');
-            }
-            function successLogin(data) {
-                localStorage.setItem('fcb_hybrid_user', JSON.stringify(data));
-                location.reload();
-            }
         }
 
-        function toggleAuth(t) {
-            document.getElementById('loginBox').classList.toggle('hidden', t === 'signup');
-            document.getElementById('signupBox').classList.toggle('hidden', t === 'login');
-            document.getElementById('statusMsg').innerText = "";
+        // --- Feed System ---
+        function getTimeAgo(time) {
+            const diff = Math.floor((Date.now() - time) / 1000);
+            if (diff < 60) return "এইমাত্র";
+            if (diff < 3600) return Math.floor(diff / 60) + " মি. আগে";
+            if (diff < 86400) return Math.floor(diff / 3600) + " ঘণ্টা আগে";
+            return Math.floor(diff / 86400) + " দিন আগে";
         }
 
-        function logout() {
-            if(confirm("Logout?")) { localStorage.removeItem('fcb_hybrid_user'); location.reload(); }
-        }
-
-        function hardReset() {
-            if(confirm("Reset app data? This fixes freezing.")) { localStorage.clear(); location.reload(); }
-        }
-
-        // --- POSTING LOGIC (Hybrid System) ---
-        function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
-        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
-
-        function previewFile(input) {
-            const file = input.files[0];
-            if(file) {
-                document.getElementById('pImgArea').classList.remove('hidden');
-                document.getElementById('pImgPreview').src = URL.createObjectURL(file);
-            }
-        }
-        function clearImg() {
-            document.getElementById('pImgArea').classList.add('hidden');
-            document.getElementById('pImgInput').value = '';
-        }
-
-        async function submitPost() {
-            const btn = document.getElementById('btnPost');
-            const txt = document.getElementById('pText').value.trim();
-            const file = document.getElementById('pImgInput').files[0];
-
-            if(!txt && !file) return alert("Write something or add photo!");
-
-            // Lock UI
-            btn.innerHTML = `<div class="spinner border-white"></div> Working...`;
-            btn.classList.add('btn-disabled');
-
-            let finalImageUrl = null;
-
-            if (file) {
-                try {
-                    // 1. Resize Image (Browser Side) - Crucial for speed
-                    btn.innerHTML = `<div class="spinner border-white"></div> Optimizing...`;
-                    const { blob, base64 } = await processImage(file);
-
-                    // 2. Try ImgBB Upload
-                    btn.innerHTML = `<div class="spinner border-white"></div> Uploading...`;
-                    try {
-                        const formData = new FormData();
-                        formData.append('image', blob);
-                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-                        const data = await res.json();
-                        
-                        if (data.success) {
-                            finalImageUrl = data.data.url;
-                            console.log("Uploaded to ImgBB");
-                        } else {
-                            throw new Error("ImgBB Failed");
-                        }
-                    } catch (netErr) {
-                        // 3. Fallback to Firebase (Base64) if ImgBB fails
-                        console.warn("ImgBB failed, using Firebase storage fallback.");
-                        finalImageUrl = base64; 
-                    }
-
-                } catch (e) {
-                    alert("Image processing failed. Try a different photo.");
-                    resetPostBtn();
-                    return;
-                }
-            }
-
-            // 4. Save to Database
-            btn.innerHTML = `<div class="spinner border-white"></div> Publishing...`;
-            
-            db.ref('posts').push({
-                uName: user.name,
-                uPfp: user.pfp,
-                content: txt,
-                image: finalImageUrl,
-                time: Date.now(),
-                likes: 0
-            }).then(() => {
-                closePostModal();
-                document.getElementById('pText').value = '';
-                clearImg();
-                resetPostBtn();
-            }).catch(e => {
-                alert("Post failed: " + e.message);
-                resetPostBtn();
-            });
-
-            function resetPostBtn() {
-                btn.innerText = "POST";
-                btn.classList.remove('btn-disabled');
-            }
-        }
-
-        // Image Resizer & Converter
-        function processImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const maxWidth = 800; // Limit size
-                        const scale = maxWidth / img.width;
-                        canvas.width = maxWidth;
-                        canvas.height = img.height * scale;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        // Return both Blob (for ImgBB) and Base64 (for Fallback)
-                        canvas.toBlob((blob) => {
-                            resolve({
-                                blob: blob,
-                                base64: canvas.toDataURL('image/jpeg', 0.6) // Quality 60%
-                            });
-                        }, 'image/jpeg', 0.6);
-                    };
-                    img.onerror = reject;
-                };
-            });
-        }
-
-        // --- FEED LOGIC ---
         function loadFeed() {
-            // Limit to last 20 posts to prevent lagging
-            db.ref('posts').limitToLast(20).on('value', snap => {
-                const list = document.getElementById('feedList');
+            db.ref('posts').limitToLast(50).on('value', snap => {
+                const list = document.getElementById('feedList'); 
                 list.innerHTML = '';
+                let ps = []; 
+                snap.forEach(c => ps.push({key: c.key, ...c.val()}));
                 
-                if (!snap.exists()) {
-                    list.innerHTML = '<div class="text-center py-10 text-gray-400">No posts yet. Be the first!</div>';
+                if(ps.length === 0) {
+                    list.innerHTML = '<div class="text-center p-10 text-gray-500">কোনো পোস্ট নেই। আপনিই প্রথম পোস্ট করুন!</div>';
                     return;
                 }
 
-                const posts = [];
-                snap.forEach(c => posts.push({ key: c.key, ...c.val() }));
-
-                posts.reverse().forEach(p => {
-                    const isMe = p.uName === user.name;
+                ps.reverse().forEach(p => {
+                    const safeContent = escapeHtml(p.content);
                     list.innerHTML += `
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-2 fade-in">
-                        <div class="p-3 flex justify-between items-start">
-                            <div class="flex items-center gap-2">
-                                <img src="${p.uPfp || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full border bg-gray-200 object-cover">
-                                <div>
-                                    <h4 class="font-bold text-sm text-gray-900">${sanitize(p.uName)}</h4>
-                                    <p class="text-xs text-gray-500">${new Date(p.time).toLocaleString()}</p>
-                                </div>
+                    <div class="post-card">
+                        <div class="flex items-center gap-2 mb-3 cursor-pointer">
+                            <img src="${p.uPfp}" class="w-10 h-10 rounded-full border object-cover" onclick="viewProfile('${p.uName}')">
+                            <div onclick="viewProfile('${p.uName}')">
+                                <h4 class="font-bold text-sm flex items-center text-gray-900 hover:underline">${p.uName} <i class="fas fa-check-circle verify-badge"></i></h4>
+                                <p class="time-text">${getTimeAgo(p.time)}</p>
                             </div>
-                            ${isMe ? `<button onclick="deletePost('${p.key}')" class="text-gray-400 hover:text-red-500 px-2"><i class="fas fa-trash"></i></button>` : ''}
                         </div>
+                        <p class="text-[15px] mb-3 text-gray-800 whitespace-pre-wrap leading-relaxed">${safeContent}</p>
+                        ${p.image ? `<div class="bg-gray-100 rounded-lg overflow-hidden flex justify-center"><img src="${p.image}" class="max-h-[400px] w-auto object-contain"></div>` : ''}
                         
-                        ${p.content ? `<div class="px-3 pb-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">${sanitize(p.content)}</div>` : ''}
-                        
-                        ${p.image ? `<div class="post-img-bg"><img src="${p.image}" class="w-full max-h-[500px] object-contain" loading="lazy"></div>` : ''}
-                        
-                        <div class="px-3 py-2 border-t flex items-center gap-4">
-                            <button onclick="likePost('${p.key}')" class="flex items-center gap-1 text-gray-500 font-bold text-sm hover:text-blue-600">
-                                <i class="far fa-thumbs-up"></i> Like (${p.likes || 0})
-                            </button>
+                        <div class="flex justify-between border-t mt-3 pt-2">
+                            <button class="flex-1 text-gray-500 hover:bg-gray-100 py-1 rounded font-bold text-sm"><i class="far fa-thumbs-up"></i> Like</button>
+                            <button class="flex-1 text-gray-500 hover:bg-gray-100 py-1 rounded font-bold text-sm"><i class="far fa-comment-alt"></i> Comment</button>
                         </div>
                     </div>`;
                 });
             });
         }
 
-        function sanitize(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        // --- Post Handling ---
+        let selectedImg = null;
+        function previewImage(input) {
+            const file = input.files[0];
+            if(file) {
+                if(file.size > 5 * 1024 * 1024) return alert("ছবি ৫MB এর কম হতে হবে");
+                compressImage(file, (base64) => {
+                    selectedImg = base64;
+                    document.getElementById('imgPreview').src = base64;
+                    document.getElementById('previewArea').classList.remove('hidden');
+                });
+            }
+        }
+        function clearImage() {
+            selectedImg = null;
+            document.getElementById('pImage').value = '';
+            document.getElementById('previewArea').classList.add('hidden');
         }
 
-        function deletePost(id) {
-            if(confirm("Delete this post?")) db.ref('posts/' + id).remove();
-        }
-        function likePost(id) {
-            db.ref('posts/' + id + '/likes').transaction(likes => (likes || 0) + 1);
+        function submitPost() {
+            const btn = document.getElementById('postBtn');
+            const t = document.getElementById('pText').value.trim();
+            if(!t && !selectedImg) return alert("কিছু লিখুন বা ছবি দিন!");
+            
+            btn.innerText = "পোস্ট হচ্ছে...";
+            btn.disabled = true;
+
+            // Always update current user info in post
+            const postData = { 
+                uName: user.name, 
+                uPfp: user.pfp, 
+                content: t, 
+                image: selectedImg, 
+                time: Date.now() 
+            };
+
+            db.ref('posts').push(postData).then(() => {
+                closePostModal();
+                btn.innerText = "পোস্ট করুন";
+                btn.disabled = false;
+                document.getElementById('pText').value = '';
+                clearImage();
+            });
         }
 
+        function openPostModal() {
+            document.getElementById('postModal').classList.remove('hidden');
+            document.getElementById('modalName').innerText = user.name;
+            document.getElementById('modalPfp').src = user.pfp;
+        }
+        function closePostModal() { document.getElementById('postModal').classList.add('hidden'); }
+
+        // --- Inbox & Chat ---
+        function loadInbox() {
+            const list = document.getElementById('chatUserList'); 
+            list.innerHTML = '<div class="text-center mt-4"><div class="loader"></div></div>';
+            
+            db.ref('users').once('value', snap => {
+                list.innerHTML = '';
+                snap.forEach(c => {
+                    const u = c.val();
+                    if(u.name !== user.name) {
+                        list.innerHTML += `
+                        <div onclick="openChat('${u.name}','${u.pfp}')" class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm cursor-pointer border hover:bg-gray-50 transition">
+                            <div class="relative">
+                                <img src="${u.pfp}" class="w-12 h-12 rounded-full border object-cover">
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">${u.name}</h4>
+                                <p class="text-xs text-gray-500">মেসেজ করতে ট্যাপ করুন</p>
+                            </div>
+                        </div>`;
+                    }
+                });
+            });
+        }
+
+        let activeChatListener = null;
+        let activeChatId = "";
+
+        function openChat(name, pfp) {
+            activeChatId = [user.name, name].sort().join("_");
+            document.getElementById('cUserName').innerText = name;
+            document.getElementById('cUserPfp').src = pfp;
+            document.getElementById('chatWin').classList.remove('hidden');
+            
+            const b = document.getElementById('cBox');
+            b.innerHTML = '<div class="text-center text-xs text-gray-400 mt-5">এনক্রিপ্টেড চ্যাট শুরু হয়েছে</div>';
+            
+            if(activeChatListener) db.ref('chats/' + activeChatId).off();
+
+            activeChatListener = db.ref('chats/' + activeChatId).limitToLast(50).on('value', s => {
+                b.innerHTML = '';
+                s.forEach(c => {
+                    const m = c.val(); 
+                    const isMe = m.sender === user.name;
+                    const safeMsg = escapeHtml(m.text);
+                    b.innerHTML += `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2">
+                        <div class="${isMe ? 'chat-me' : 'chat-other'}">${safeMsg}</div>
+                    </div>`;
+                });
+                // Auto scroll to bottom
+                setTimeout(() => b.scrollTop = b.scrollHeight, 100);
+            });
+        }
+
+        function sendMsg() {
+            const inp = document.getElementById('cInput');
+            const t = inp.value.trim(); 
+            if(!t) return;
+            
+            db.ref('chats/' + activeChatId).push({ 
+                sender: user.name, 
+                text: t, 
+                time: Date.now() 
+            });
+            inp.value = '';
+            document.getElementById('cBox').scrollTop = document.getElementById('cBox').scrollHeight;
+        }
+
+        function closeChat() { 
+            document.getElementById('chatWin').classList.add('hidden'); 
+            if(activeChatListener) db.ref('chats/' + activeChatId).off();
+        }
+
+        // --- Profile System & Follow Logic ---
+        function viewProfile(targetName) {
+            // UI Reset
+            showSection('profile');
+            document.getElementById('profilePfp').src = "https://via.placeholder.com/150";
+            document.getElementById('pNameDisp').innerText = "Loading...";
+            document.getElementById('profileActionArea').innerHTML = '';
+            document.getElementById('editPfpBtn').classList.add('hidden');
+
+            db.ref('users/' + targetName).once('value', s => {
+                const d = s.val();
+                if(!d) return alert("User not found");
+
+                document.getElementById('pNameDisp').innerHTML = `${d.name} <i class="fas fa-check-circle verify-badge"></i>`;
+                document.getElementById('profilePfp').src = d.pfp;
+                // Follower count logic check
+                db.ref(`users/${targetName}/followers`).once('value', fSnap => {
+                    const count = fSnap.numChildren();
+                    document.getElementById('fCountDisp').innerText = count + " Followers";
+                });
+
+                document.getElementById('joinDate').innerText = d.joined ? new Date(d.joined).toDateString() : "N/A";
+
+                const actionArea = document.getElementById('profileActionArea');
+
+                if(targetName === user.name) {
+                    // Own Profile
+                    document.getElementById('editPfpBtn').classList.remove('hidden');
+                    actionArea.innerHTML = `
+                        <button onclick="logout()" class="w-full bg-gray-200 text-black py-2 px-6 rounded-lg font-bold hover:bg-gray-300">লগআউট</button>
+                    `;
+                    // Update local storage user data just in case
+                    user.pfp = d.pfp;
+                    localStorage.setItem('freechatbook_user', JSON.stringify(user));
+                    document.getElementById('navPfp').src = user.pfp;
+                } else {
+                    // Other's Profile - Check Follow Status
+                    db.ref(`users/${targetName}/followers/${user.name}`).once('value', fStatus => {
+                        const isFollowing = fStatus.exists();
+                        if(isFollowing) {
+                            actionArea.innerHTML = `
+                                <button onclick="handleFollow('${targetName}', false)" class="bg-gray-200 text-black py-2 px-8 rounded-lg font-bold">Following</button>
+                                <button onclick="openChat('${targetName}', '${d.pfp}')" class="bg-[#0866FF] text-white py-2 px-4 rounded-lg font-bold"><i class="fab fa-facebook-messenger"></i> Message</button>
+                            `;
+                        } else {
+                            actionArea.innerHTML = `
+                                <button onclick="handleFollow('${targetName}', true)" class="bg-[#0866FF] text-white py-2 px-8 rounded-lg font-bold">Follow</button>
+                                <button onclick="openChat('${targetName}', '${d.pfp}')" class="bg-gray-200 text-black py-2 px-4 rounded-lg font-bold"><i class="fab fa-facebook-messenger"></i></button>
+                            `;
+                        }
+                    });
+                }
+            });
+        }
+
+        function handleFollow(targetName, doFollow) {
+            if(doFollow) {
+                db.ref(`users/${targetName}/followers/${user.name}`).set(true);
+                db.ref(`users/${user.name}/following/${targetName}`).set(true);
+            } else {
+                db.ref(`users/${targetName}/followers/${user.name}`).remove();
+                db.ref(`users/${user.name}/following/${targetName}`).remove();
+            }
+            // Refresh UI
+            setTimeout(() => viewProfile(targetName), 200);
+        }
+
+        function uploadProfilePic(input) {
+            const file = input.files[0];
+            if(!file) return;
+            if(!confirm("প্রোফাইল পিকচার পরিবর্তন করবেন?")) return;
+
+            compressImage(file, (base64) => {
+                db.ref('users/' + user.name + '/pfp').set(base64).then(() => {
+                    alert("প্রোফাইল পিকচার আপডেট হয়েছে!");
+                    viewProfile(user.name);
+                });
+            });
+        }
+
+        function logout() { 
+            if(confirm("আপনি কি নিশ্চিত লগআউট করবেন?")) { 
+                localStorage.removeItem('freechatbook_user'); 
+                location.reload(); 
+            } 
+        }
+
+        // Navigation
+        function showSection(id) {
+            ['feed','inbox','profile'].forEach(s => {
+                document.getElementById(s+'Section').classList.add('hidden');
+                document.getElementById('ic-'+s)?.classList.remove('text-blue-600');
+                document.getElementById('ic-'+s)?.classList.add('text-gray-400');
+            });
+            document.getElementById(id+'Section').classList.remove('hidden');
+            document.getElementById('ic-'+id)?.classList.add('text-blue-600');
+            document.getElementById('ic-'+id)?.classList.remove('text-gray-400');
+            
+            if(id === 'inbox') loadInbox();
+            if(id === 'feed') window.scrollTo(0,0);
+        }
+
+        // Init
+        if(user) {
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('navPfp').src = user.pfp;
+            document.getElementById('writePostPfp').src = user.pfp;
+            document.getElementById('writePostName').innerText = user.name;
+            document.getElementById('ic-feed').classList.add('text-blue-600'); // Set home active
+            loadFeed();
+        }
     </script>
 </body>
 </html>
